@@ -22,28 +22,28 @@
 
 ## 3. Stack (padrão — confirmar)
 
-| Área | Escolha | Observação |
-|---|---|---|
-| Runtime / linguagem | Node.js 22 LTS + TypeScript (strict) | |
-| HTTP | **Fastify** ✅ decidido | ADR-0001 (descartado: NestJS) |
-| Banco | PostgreSQL 16 | |
-| ORM / Database Pattern | Prisma + **Repository** | ⏳ provisório, depende do módulo 4 (seção 12) |
-| Cache | Redis (cache-aside com TTL) | |
-| Fila | BullMQ (sobre Redis) | Processamento de pagamento assíncrono |
-| Validação / config | Zod | Config validada no boot |
-| Testes | Vitest + Testcontainers + Pact | Unit, integração, contrato |
-| Coverage | @vitest/coverage-v8 (+ Codecov opcional) | Mínimo declarado no `vitest.config.ts` |
-| Lint | ESLint + Prettier + `eslint-plugin-boundaries` | Boundaries garante a fronteira dos módulos |
-| Logs | pino (JSON estruturado) | |
-| Métricas | prom-client → Prometheus + Grafana | Métricas RED |
-| Tracing | OpenTelemetry → Jaeger | |
-| Feature flag | Unleash (self-hosted no compose) | |
-| OpenAPI | OpenAPI 3.1 + Spectral (lint) + Swagger UI | |
-| CI | GitHub Actions | lint, typecheck, testes, coverage, SCA |
-| SCA / segredos | npm audit + Trivy + gitleaks | |
-| Deploy | Render | Ambientes `staging` e `production` |
-| Carga | k6 + clinic.js + EXPLAIN ANALYZE | |
-| Diagramas | Mermaid (C4) | |
+| Área                   | Escolha                                        | Observação                                    |
+| ---------------------- | ---------------------------------------------- | --------------------------------------------- |
+| Runtime / linguagem    | Node.js 22 LTS + TypeScript (strict)           |                                               |
+| HTTP                   | **Fastify** ✅ decidido                        | ADR-0001 (descartado: NestJS)                 |
+| Banco                  | PostgreSQL 16                                  |                                               |
+| ORM / Database Pattern | Prisma + **Repository**                        | ⏳ provisório, depende do módulo 4 (seção 12) |
+| Cache                  | Redis (cache-aside com TTL)                    |                                               |
+| Fila                   | BullMQ (sobre Redis)                           | Processamento de pagamento assíncrono         |
+| Validação / config     | Zod                                            | Config validada no boot                       |
+| Testes                 | Vitest + Testcontainers + Pact                 | Unit, integração, contrato                    |
+| Coverage               | @vitest/coverage-v8 (+ Codecov opcional)       | Mínimo declarado no `vitest.config.ts`        |
+| Lint                   | ESLint + Prettier + `eslint-plugin-boundaries` | Boundaries garante a fronteira dos módulos    |
+| Logs                   | pino (JSON estruturado)                        |                                               |
+| Métricas               | prom-client → Prometheus + Grafana             | Métricas RED                                  |
+| Tracing                | OpenTelemetry → Jaeger                         |                                               |
+| Feature flag           | Unleash (self-hosted no compose)               |                                               |
+| OpenAPI                | OpenAPI 3.1 + Spectral (lint) + Swagger UI     |                                               |
+| CI                     | GitHub Actions                                 | lint, typecheck, testes, coverage, SCA        |
+| SCA / segredos         | npm audit + Trivy + gitleaks                   |                                               |
+| Deploy                 | Render                                         | Ambientes `staging` e `production`            |
+| Carga                  | k6 + clinic.js + EXPLAIN ANALYZE               |                                               |
+| Diagramas              | Mermaid (C4)                                   |                                               |
 
 ## 4. Arquitetura — monólito modular
 
@@ -92,6 +92,7 @@ modules/<name>/
 ```
 
 **Regras de fronteira (aplicadas pelo ESLint, quebram o CI):**
+
 - Um módulo só importa de outro pelo `index.ts` dele. Proibido `modules/orders/...` importar `modules/catalog/domain/...`.
 - `domain/` não importa Prisma, Fastify, Redis nem nada de `infrastructure/`.
 - Cada módulo é dono das suas tabelas. Sem JOIN entre tabelas de módulos diferentes; use a API pública do outro módulo.
@@ -129,6 +130,7 @@ npm run k6:after              # k6 depois da otimização
 ## 7. Entregáveis e onde ficam
 
 ### Base de qualidade
+
 - [ ] `docker-compose.yml` que sobe com **1 comando** (healthchecks + `depends_on`)
 - [x] Framework HTTP → `docs/adr/0001-framework-http-fastify.md`
 - [ ] Monólito modular → `docs/adr/0002-monolito-modular.md` (descartado: microserviços)
@@ -138,6 +140,7 @@ npm run k6:after              # k6 depois da otimização
 - [ ] Coverage mínimo **declarado no pipeline** (`vitest.config.ts` → `thresholds`, padrão: 80% linhas em `domain/` e `application/`)
 
 ### Entrega e operação
+
 - [ ] `.github/workflows/ci.yml`: lint → typecheck → testes → coverage → `npm audit --audit-level=high` → Trivy → gitleaks → spectral
 - [ ] Dois ambientes (`staging`, `production`) via GitHub Environments; config só por variável de ambiente; `.env.example` versionado, `.env` no `.gitignore`; config validada com Zod no boot
 - [ ] Logs estruturados (pino, com `requestId` e `traceId`)
@@ -148,6 +151,7 @@ npm run k6:after              # k6 depois da otimização
 - [ ] Estratégia de deploy registrada em ADR (padrão: deploy contínuo no Render com health check + rollback; flag como mecanismo de liberação gradual)
 
 ### Arquitetura e desempenho
+
 - [ ] ADRs (MADR) em `docs/adr/`, **cada um com a alternativa descartada**
 - [ ] C4 de **contexto** (`docs/c4/contexto.md`) e de **contêiner** (`docs/c4/conteiner.md`) em Mermaid
 - [ ] OpenAPI 3.1 de **catálogo** e **pedido** em `docs/openapi.yaml` (arquivo único), com lint no pipeline e Swagger UI em `/docs`
@@ -157,6 +161,7 @@ npm run k6:after              # k6 depois da otimização
 - [ ] k6 em **3 estágios** (`stages`: rampa de subida → sustentação → rampa de descida) em `k6/`; relatório em `docs/desempenho.md` com **gargalo identificado, antes e depois** (números de p95, RPS, erro), evidência via `EXPLAIN ANALYZE` e/ou clinic.js
 
 ### Documentos obrigatórios
+
 - [ ] `README.md` — **a primeira linha deve ser:** `Nível escolhido: Projeto A (Avançado)`. Depois: como subir, como testar, link do CI verde
 - [ ] `docs/desempenho.md`
 - [ ] `docs/ia.md` — prompts que importaram
@@ -164,15 +169,15 @@ npm run k6:after              # k6 depois da otimização
 
 ## 8. Plano de execução (até 13/11)
 
-| Dia | Foco |
-|---|---|
-| Sáb 07 | Setup: repo, TS, ESLint/boundaries, compose, Prisma, esqueleto dos 3 módulos, ADR-0001 (Fastify) ✅ |
-| Dom 08 | Domínio e casos de uso de catalog/orders/payments, seed 100k, ADR-0002. Patterns atrás de interfaces (trocáveis) |
+| Dia    | Foco                                                                                                                 |
+| ------ | -------------------------------------------------------------------------------------------------------------------- |
+| Sáb 07 | Setup: repo, TS, ESLint/boundaries, compose, Prisma, esqueleto dos 3 módulos, ADR-0001 (Fastify) ✅                  |
+| Dom 08 | Domínio e casos de uso de catalog/orders/payments, seed 100k, ADR-0002. Patterns atrás de interfaces (trocáveis)     |
 | Seg 09 | **Revisar módulo 4 e fechar ADR-0003/0004**; testes unit/integração/contrato, coverage threshold, OpenAPI + Spectral |
-| Ter 10 | CI completo, ambientes e segredos, logs, métricas RED, trace, SLO |
-| Qua 11 | Cache + flag, fila idempotente, C4, ADRs restantes, deploy no Render |
-| Qui 12 | k6 baseline → achar gargalo → otimizar → k6 after → `docs/desempenho.md` |
-| Sex 13 | README final, `docs/ia.md`, CONTRIBUTORS, CI verde, **entrega** |
+| Ter 10 | CI completo, ambientes e segredos, logs, métricas RED, trace, SLO                                                    |
+| Qua 11 | Cache + flag, fila idempotente, C4, ADRs restantes, deploy no Render                                                 |
+| Qui 12 | k6 baseline → achar gargalo → otimizar → k6 after → `docs/desempenho.md`                                             |
+| Sex 13 | README final, `docs/ia.md`, CONTRIBUTORS, CI verde, **entrega**                                                      |
 
 Se o prazo apertar, priorize nesta ordem: sistema rodando com 1 comando → testes + CI verde → docs obrigatórios → k6 com antes/depois → observabilidade → flag/deploy.
 

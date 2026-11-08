@@ -18,7 +18,7 @@ const publicApiOfAnyModule = { to: { element: { type: 'module', fileInternalPath
 const shared = { to: { element: { type: 'shared' } } };
 
 export default tseslint.config(
-  { ignores: ['dist/', 'coverage/', 'node_modules/'] },
+  { ignores: ['dist/', 'coverage/', 'node_modules/', 'src/shared/db/generated/'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

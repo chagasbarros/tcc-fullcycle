@@ -9,7 +9,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.spec.ts', 'src/server.ts'],
+      exclude: ['src/**/*.spec.ts', 'src/server.ts', 'src/shared/db/generated/**'],
       reporter: ['text', 'html', 'lcov'],
       // Minimum declared in the pipeline (CLAUDE.md, section 7):
       // 80% of lines in the business core (domain/ and application/).

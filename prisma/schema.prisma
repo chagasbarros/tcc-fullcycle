@@ -1,0 +1,11 @@
+// Each module owns its tables (CLAUDE.md, section 4): no relations across modules.
+// Models are added together with each module's repositories.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/shared/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -18,9 +18,11 @@ import { ordersRoutes } from './http/routes.js';
  */
 
 export type { OrderEventPublisher, OrderPlaced, OrderRepository, PaymentResult };
+export { BullMqOrderEventPublisher } from './infrastructure/bullmq-order-event-publisher.js';
 export { InMemoryOrderEventPublisher } from './infrastructure/in-memory-order-event-publisher.js';
 export { InMemoryOrderRepository } from './infrastructure/in-memory-order-repository.js';
 export { PrismaOrderRepository } from './infrastructure/prisma-order-repository.js';
+export { createPaymentResultsConsumer } from './infrastructure/payment-results-consumer.js';
 
 export interface OrdersModule {
   routes: FastifyPluginAsync;

@@ -13,6 +13,7 @@ describe('loadEnv', () => {
       HOST: '0.0.0.0',
       PORT: 3000,
       LOG_LEVEL: 'info',
+      PAYMENT_PROVIDER_LATENCY_MS: 0,
       ...required,
     });
   });

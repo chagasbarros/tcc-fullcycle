@@ -2,15 +2,27 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
 import { createCatalogModule, InMemoryProductRepository } from './modules/catalog/index.js';
+import {
+  createOrdersModule,
+  InMemoryOrderEventPublisher,
+  InMemoryOrderRepository,
+} from './modules/orders/index.js';
 
 describe('app', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
+    const catalog = createCatalogModule({
+      productRepository: new InMemoryProductRepository(),
+      newId: () => 'unused',
+    });
     app = await buildApp({
       env: { NODE_ENV: 'test', LOG_LEVEL: 'info' },
-      catalog: createCatalogModule({
-        productRepository: new InMemoryProductRepository(),
+      catalog,
+      orders: createOrdersModule({
+        orderRepository: new InMemoryOrderRepository(),
+        catalog: catalog.api,
+        eventPublisher: new InMemoryOrderEventPublisher(),
         newId: () => 'unused',
       }),
     });

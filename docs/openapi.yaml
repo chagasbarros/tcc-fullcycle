@@ -19,6 +19,8 @@ tags:
     description: Verificação de saúde
   - name: catalog
     description: Produtos, preço e estoque
+  - name: orders
+    description: Pedidos e seus estados (ADR-0007)
 
 paths:
   /health:
@@ -108,7 +110,88 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /orders:
+    post:
+      tags: [orders]
+      operationId: placeOrder
+      summary: Cria um pedido
+      description: |
+        Copia nome e preço atuais dos produtos (snapshot) e reserva o estoque de forma
+        atômica e tudo-ou-nada (ADR-0009). O pedido nasce em `PENDING_PAYMENT` e o
+        pagamento é processado de forma assíncrona. Produtos repetidos são somados.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrder'
+      responses:
+        '201':
+          description: Pedido criado, aguardando pagamento
+          headers:
+            Location:
+              description: URL do pedido criado
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+
+  /orders/{id}:
+    get:
+      tags: [orders]
+      operationId: getOrder
+      summary: Busca um pedido pelo ID
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /orders/{id}/cancel:
+    post:
+      tags: [orders]
+      operationId: cancelOrder
+      summary: Cancela um pedido que ainda aguarda pagamento
+      description: Devolve o estoque reservado. Só é possível a partir de `PENDING_PAYMENT`.
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Pedido cancelado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
 components:
+  parameters:
+    OrderId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
   schemas:
     Product:
       type: object
@@ -141,6 +224,58 @@ components:
         pageSize: { type: integer, minimum: 1, maximum: 100 }
         total: { type: integer, minimum: 0 }
 
+    PlaceOrder:
+      type: object
+      required: [customerId, items]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: Identidade externa do cliente (ADR-0008)
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId: { type: string, format: uuid }
+              quantity: { type: integer, minimum: 1, maximum: 1000 }
+
+    OrderStatus:
+      type: string
+      enum: [PENDING_PAYMENT, PAID, PAYMENT_FAILED, CANCELLED]
+      description: |
+        `PENDING_PAYMENT` pode ir para `PAID`, `PAYMENT_FAILED` ou `CANCELLED`;
+        os demais são estados finais (ADR-0007).
+
+    Order:
+      type: object
+      required: [id, customerId, status, totalInCents, createdAt, items]
+      properties:
+        id: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        totalInCents: { type: integer, minimum: 0, description: Total em centavos }
+        createdAt: { type: string, format: date-time }
+        items:
+          type: array
+          items:
+            type: object
+            required: [productId, productName, unitPriceInCents, quantity, subtotalInCents]
+            properties:
+              productId: { type: string, format: uuid }
+              productName:
+                type: string
+                description: Nome no momento da compra (snapshot)
+              unitPriceInCents:
+                type: integer
+                minimum: 0
+                description: Preço no momento da compra (snapshot)
+              quantity: { type: integer, minimum: 1 }
+              subtotalInCents: { type: integer, minimum: 0 }
+
     Problem:
       description: RFC 9457 Problem Details
       type: object
@@ -169,6 +304,11 @@ components:
           schema: { $ref: '#/components/schemas/Problem' }
     NotFound:
       description: Recurso não encontrado
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conflito com o estado atual (sem estoque ou transição de estado inválida)
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }

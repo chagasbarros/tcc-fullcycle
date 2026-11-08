@@ -1,5 +1,10 @@
 import { buildApp } from './app.js';
 import { createCatalogModule, PrismaProductRepository } from './modules/catalog/index.js';
+import {
+  createOrdersModule,
+  InMemoryOrderEventPublisher,
+  PrismaOrderRepository,
+} from './modules/orders/index.js';
 import { loadEnv } from './shared/config/env.js';
 import { createPrismaClient } from './shared/db/prisma.js';
 import { newId } from './shared/ids.js';
@@ -12,8 +17,15 @@ const catalog = createCatalogModule({
   productRepository: new PrismaProductRepository(prisma),
   newId,
 });
+const orders = createOrdersModule({
+  orderRepository: new PrismaOrderRepository(prisma),
+  catalog: catalog.api,
+  // TODO(payments): replace with the BullMQ publisher; until then orders stay PENDING_PAYMENT.
+  eventPublisher: new InMemoryOrderEventPublisher(),
+  newId,
+});
 
-const app = await buildApp({ env, catalog });
+const app = await buildApp({ env, catalog, orders });
 app.addHook('onClose', () => prisma.$disconnect());
 
 // Graceful shutdown: stop accepting requests and finish the in-flight ones.

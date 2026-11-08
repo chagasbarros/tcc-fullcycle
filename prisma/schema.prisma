@@ -30,3 +30,48 @@ model Product {
   @@map("products")
   @@schema("catalog")
 }
+
+// ---------------------------------------------------------------------------
+// orders
+// ---------------------------------------------------------------------------
+
+/// ADR-0007: only PENDING_PAYMENT can change; the others are final.
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PAYMENT_FAILED
+  CANCELLED
+
+  @@schema("orders")
+}
+
+model Order {
+  id           String      @id @db.Uuid
+  /// External identity (ADR-0008): no customers table.
+  customerId   String      @map("customer_id") @db.Uuid
+  status       OrderStatus
+  /// Stored to avoid summing items on every read. Money in cents.
+  totalInCents Int         @map("total_in_cents")
+  createdAt    DateTime    @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  items        OrderItem[]
+
+  @@index([customerId])
+  @@map("orders")
+  @@schema("orders")
+}
+
+model OrderItem {
+  orderId          String @map("order_id") @db.Uuid
+  /// References catalog.products by id only: no FK across modules (ADR-0005).
+  productId        String @map("product_id") @db.Uuid
+  /// Snapshot at purchase time (ADR-0009).
+  productName      String @map("product_name") @db.VarChar(200)
+  unitPriceInCents Int    @map("unit_price_in_cents")
+  quantity         Int
+  order            Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, productId])
+  @@map("order_items")
+  @@schema("orders")
+}

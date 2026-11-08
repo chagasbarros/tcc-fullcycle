@@ -135,7 +135,7 @@ npm run k6:after              # k6 depois da otimização
 
 - [ ] `docker-compose.yml` que sobe com **1 comando** (healthchecks + `depends_on`)
 - [x] Framework HTTP → `docs/adr/0001-framework-http-fastify.md`
-- [ ] Monólito modular → `docs/adr/0002-monolito-modular.md` (descartado: microserviços)
+- [x] Monólito modular → `docs/adr/0002-monolito-modular.md` (descartado: microserviços)
 - [ ] SOLID + design pattern justificado → `docs/adr/0003-design-pattern.md` (⏳ após módulo 4)
 - [ ] Database Pattern → `docs/adr/0004-database-pattern.md` (⏳ após módulo 4)
 - [ ] Testes unitários (`*.spec.ts` ao lado do código), integração (`tests/integration/`, Testcontainers), contrato de API (`tests/contract/`, Pact)

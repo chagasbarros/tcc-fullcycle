@@ -22,7 +22,8 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "worker": "tsx watch --env-file-if-exists=.env src/worker.ts",
-    "start:worker": "node dist/worker.js"
+    "start:worker": "node dist/worker.js",
+    "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.6.0",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^10.14.0",

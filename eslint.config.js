@@ -48,8 +48,11 @@ export default tseslint.config(
         { type: 'module', pattern: 'src/modules/*', capture: ['module'] },
         { type: 'shared', pattern: 'src/shared' },
       ],
-      // Composition root (src/app.ts, src/server.ts) is a file, not a folder.
-      'boundaries/files': [{ pattern: 'src/*.ts', category: 'root' }],
+      'boundaries/files': [
+        // Composition root (src/app.ts, src/server.ts) is a file, not a folder.
+        { pattern: 'src/*.ts', category: 'root' },
+        { pattern: 'src/**/*.spec.ts', category: 'test' },
+      ],
     },
     rules: {
       'boundaries/dependencies': [
@@ -96,6 +99,20 @@ export default tseslint.config(
             },
             // shared: technical infra, knows nothing about business modules.
             { from: { element: { type: 'shared' } }, allow: [shared] },
+            // Unit tests may use any layer of their OWN module (e.g. a use case test
+            // with the in-memory repository). Other modules: still only via index.ts.
+            {
+              from: { file: { categories: 'test' } },
+              allow: [
+                layer('domain'),
+                layer('application'),
+                layer('infrastructure'),
+                layer('http'),
+                { to: { element: { type: 'module', captured: sameModule } } },
+                shared,
+                publicApiOfAnyModule,
+              ],
+            },
             // app.ts / server.ts: composition root.
             {
               from: { file: { categories: 'root' } },

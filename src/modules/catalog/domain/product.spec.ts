@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { InvalidProductError, Product, type ProductProps } from './product.js';
+import {
+  InsufficientStockError,
+  InvalidProductError,
+  Product,
+  type ProductProps,
+} from './product.js';
 
 const validProps: ProductProps = {
   id: '0190f5c2-0000-7000-8000-000000000001',
@@ -39,5 +44,29 @@ describe('Product', () => {
     expect(product.hasStockFor(10)).toBe(true);
     expect(product.hasStockFor(11)).toBe(false);
     expect(product.hasStockFor(0)).toBe(false);
+  });
+
+  it('decreases and increases stock', () => {
+    const product = Product.create(validProps);
+
+    product.decreaseStock(4);
+    expect(product.stock).toBe(6);
+
+    product.increaseStock(2);
+    expect(product.stock).toBe(8);
+  });
+
+  it('does not let stock go below zero', () => {
+    const product = Product.create(validProps);
+
+    expect(() => product.decreaseStock(11)).toThrow(InsufficientStockError);
+    expect(product.stock).toBe(10);
+  });
+
+  it.each([0, -1, 1.5])('rejects invalid quantity %s', (quantity) => {
+    const product = Product.create(validProps);
+
+    expect(() => product.decreaseStock(quantity)).toThrow(InvalidProductError);
+    expect(() => product.increaseStock(quantity)).toThrow(InvalidProductError);
   });
 });

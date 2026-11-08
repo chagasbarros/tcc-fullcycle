@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: Marketplace API
+  version: 0.1.0
+  summary: Monólito modular — catálogo, pedidos e pagamentos (TCC Fullcycle, Projeto A).
+  description: |
+    Contrato da API do marketplace. Arquivo único com catálogo e pedidos.
+
+    - Dinheiro sempre em centavos (inteiro), nunca float.
+    - IDs são UUID v7.
+    - Erros seguem a RFC 9457 (`application/problem+json`).
+  contact:
+    name: Chagas Barros
+servers:
+  - url: http://localhost:3000
+    description: Local (docker compose)
+tags:
+  - name: health
+    description: Verificação de saúde
+  - name: catalog
+    description: Produtos, preço e estoque
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Verifica se a API está no ar
+      responses:
+        '200':
+          description: API saudável
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+
+  /catalog/products:
+    get:
+      tags: [catalog]
+      operationId: listProducts
+      summary: Lista produtos com paginação
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Página de produtos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [catalog]
+      operationId: createProduct
+      summary: Cria um produto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProduct'
+      responses:
+        '201':
+          description: Produto criado
+          headers:
+            Location:
+              description: URL do produto criado
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+
+  /catalog/products/{id}:
+    get:
+      tags: [catalog]
+      operationId: getProduct
+      summary: Busca um produto pelo ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Produto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    Product:
+      type: object
+      required: [id, name, priceInCents, stock]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        priceInCents:
+          type: integer
+          minimum: 0
+          description: Preço em centavos (ex. 34990 = R$ 349,90)
+        stock: { type: integer, minimum: 0 }
+
+    CreateProduct:
+      type: object
+      required: [name, priceInCents, stock]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        priceInCents: { type: integer, minimum: 0 }
+        stock: { type: integer, minimum: 0 }
+
+    ProductPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Product' }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }
+
+    Problem:
+      description: RFC 9457 Problem Details
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, default: about:blank }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          description: Campos inválidos (apenas em 400)
+          items:
+            type: object
+            required: [path, message]
+            properties:
+              path: { type: string }
+              message: { type: string }
+
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    UnprocessableContent:
+      description: Regra de negócio violada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }

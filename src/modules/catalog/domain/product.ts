@@ -2,6 +2,10 @@ export class InvalidProductError extends Error {
   override readonly name = 'InvalidProductError';
 }
 
+export class InsufficientStockError extends Error {
+  override readonly name = 'InsufficientStockError';
+}
+
 export interface ProductProps {
   id: string;
   name: string;
@@ -49,5 +53,26 @@ export class Product {
 
   hasStockFor(quantity: number): boolean {
     return quantity > 0 && quantity <= this.props.stock;
+  }
+
+  decreaseStock(quantity: number): void {
+    assertPositiveQuantity(quantity);
+    if (!this.hasStockFor(quantity)) {
+      throw new InsufficientStockError(
+        `product ${this.props.id} has ${this.props.stock} in stock, requested ${quantity}`,
+      );
+    }
+    this.props.stock -= quantity;
+  }
+
+  increaseStock(quantity: number): void {
+    assertPositiveQuantity(quantity);
+    this.props.stock += quantity;
+  }
+}
+
+function assertPositiveQuantity(quantity: number): void {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new InvalidProductError('quantity must be a positive integer');
   }
 }

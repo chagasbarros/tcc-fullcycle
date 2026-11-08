@@ -33,6 +33,7 @@ function copy(order: Order): Order {
     id: order.id,
     customerId: order.customerId,
     status: order.status,
+    paymentMethod: order.paymentMethod,
     items: [...order.items],
     createdAt: order.createdAt,
   });

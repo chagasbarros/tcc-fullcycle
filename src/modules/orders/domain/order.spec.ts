@@ -21,7 +21,13 @@ const mouse: OrderItem = {
 };
 
 const place = (items: OrderItem[] = [keyboard, mouse]) =>
-  Order.place({ id: 'o-1', customerId: 'c-1', items, createdAt: new Date('2026-11-08') });
+  Order.place({
+    id: 'o-1',
+    customerId: 'c-1',
+    paymentMethod: 'CARD',
+    items,
+    createdAt: new Date('2026-11-08'),
+  });
 
 describe('Order', () => {
   it('starts as PENDING_PAYMENT and computes the total in cents', () => {

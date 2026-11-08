@@ -1,11 +1,12 @@
 import type { CatalogApi } from '../../catalog/index.js';
-import { InvalidOrderError, Order, type OrderItem } from '../domain/order.js';
+import { InvalidOrderError, Order, type OrderItem, type PaymentMethod } from '../domain/order.js';
 import { OutOfStockError, UnknownProductsError } from './errors.js';
 import type { OrderEventPublisher } from './order-event-publisher.js';
 import type { OrderRepository } from './order-repository.js';
 
 export interface PlaceOrderInput {
   customerId: string;
+  paymentMethod: PaymentMethod;
   items: { productId: string; quantity: number }[];
 }
 
@@ -43,6 +44,7 @@ export class PlaceOrder {
     const order = Order.place({
       id: this.newId(),
       customerId: input.customerId,
+      paymentMethod: input.paymentMethod,
       items,
       createdAt: this.now(),
     });
@@ -63,6 +65,7 @@ export class PlaceOrder {
       orderId: order.id,
       customerId: order.customerId,
       totalInCents: order.totalInCents,
+      paymentMethod: order.paymentMethod,
     });
     return order;
   }

@@ -77,6 +77,7 @@ describe('orders use cases', () => {
   const placeDefault = () =>
     placeOrder.execute({
       customerId: CUSTOMER,
+      paymentMethod: 'CARD',
       items: [
         { productId: keyboardId, quantity: 2 },
         { productId: mouseId, quantity: 1 },
@@ -97,13 +98,14 @@ describe('orders use cases', () => {
       expect(await stockOf(mouseId)).toBe(0);
       expect(await orders.findById('o-1')).not.toBeNull();
       expect(events.published).toEqual([
-        { orderId: 'o-1', customerId: CUSTOMER, totalInCents: 79_970 },
+        { orderId: 'o-1', customerId: CUSTOMER, paymentMethod: 'CARD', totalInCents: 79_970 },
       ]);
     });
 
     it('merges repeated products into one item', async () => {
       const order = await placeOrder.execute({
         customerId: CUSTOMER,
+        paymentMethod: 'CARD',
         items: [
           { productId: keyboardId, quantity: 1 },
           { productId: keyboardId, quantity: 2 },
@@ -118,6 +120,7 @@ describe('orders use cases', () => {
       await expect(
         placeOrder.execute({
           customerId: CUSTOMER,
+          paymentMethod: 'CARD',
           items: [
             { productId: keyboardId, quantity: 1 },
             { productId: MISSING, quantity: 1 },
@@ -130,7 +133,11 @@ describe('orders use cases', () => {
 
     it('fails with OutOfStockError and saves nothing when stock is not enough', async () => {
       await expect(
-        placeOrder.execute({ customerId: CUSTOMER, items: [{ productId: mouseId, quantity: 2 }] }),
+        placeOrder.execute({
+          customerId: CUSTOMER,
+          paymentMethod: 'CARD',
+          items: [{ productId: mouseId, quantity: 2 }],
+        }),
       ).rejects.toThrow(OutOfStockError);
       expect(await orders.findById('o-1')).toBeNull();
       expect(events.published).toHaveLength(0);
@@ -140,9 +147,9 @@ describe('orders use cases', () => {
       ['no items', []],
       ['zero quantity', [{ productId: keyboardId, quantity: 0 }]],
     ])('rejects %s before any I/O', async (_case, items) => {
-      await expect(placeOrder.execute({ customerId: CUSTOMER, items })).rejects.toThrow(
-        InvalidOrderError,
-      );
+      await expect(
+        placeOrder.execute({ customerId: CUSTOMER, paymentMethod: 'CARD', items }),
+      ).rejects.toThrow(InvalidOrderError);
     });
 
     it('gives the stock back if saving the order fails', async () => {
@@ -151,7 +158,11 @@ describe('orders use cases', () => {
       const place = new PlaceOrder(failing, catalog, events, () => 'o-1');
 
       await expect(
-        place.execute({ customerId: CUSTOMER, items: [{ productId: keyboardId, quantity: 2 }] }),
+        place.execute({
+          customerId: CUSTOMER,
+          paymentMethod: 'CARD',
+          items: [{ productId: keyboardId, quantity: 2 }],
+        }),
       ).rejects.toThrow('database is down');
       expect(await stockOf(keyboardId)).toBe(5);
       expect(events.published).toHaveLength(0);

@@ -12,6 +12,7 @@ export class PrismaOrderRepository implements OrderRepository {
         id: order.id,
         customerId: order.customerId,
         status: order.status,
+        paymentMethod: order.paymentMethod,
         totalInCents: order.totalInCents,
         createdAt: order.createdAt,
         items: {
@@ -35,6 +36,7 @@ export class PrismaOrderRepository implements OrderRepository {
       id: row.id,
       customerId: row.customerId,
       status: row.status,
+      paymentMethod: row.paymentMethod,
       createdAt: row.createdAt,
       items: row.items.map((item) => ({
         productId: item.productId,

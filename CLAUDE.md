@@ -112,9 +112,11 @@ modules/<name>/
 
 ```bash
 docker compose up -d          # sobe TUDO com 1 comando: api, postgres, redis, worker, unleash, prometheus, grafana, jaeger
+cp .env.example .env          # 1ª vez: variáveis locais (o .env não é versionado)
 npm run dev                   # api em modo watch
 npm run worker                # consumer BullMQ
 npm run db:migrate            # prisma migrate
+npm run db:generate           # gera o Prisma Client (necessário após mudar prisma/schema.prisma)
 npm run db:seed               # 100k+ pedidos sintéticos
 npm run lint                  # eslint (inclui boundaries)
 npm run typecheck             # tsc --noEmit

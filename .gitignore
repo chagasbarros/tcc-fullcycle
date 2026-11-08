@@ -19,3 +19,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Prisma generated client (run `npm run db:generate`)
+src/shared/db/generated/

@@ -6,8 +6,6 @@ export default defineConfig({
     // Unit tests live next to the code (*.spec.ts).
     // Integration (tests/integration) and contract (tests/contract) get their own scripts.
     include: ['src/**/*.spec.ts'],
-    // TODO(setup): remove once the module skeleton has its first unit tests.
-    passWithNoTests: true,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

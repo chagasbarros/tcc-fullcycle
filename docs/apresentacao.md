@@ -1,0 +1,84 @@
+# Apresentação — material de apoio (16/11/2026)
+
+Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao longo do projeto com números medidos e prints. **Só entram aqui números que foram medidos de verdade**, com data e forma de reproduzir.
+
+| Bloco            | Tempo | Conteúdo                                                                                |
+| ---------------- | ----- | --------------------------------------------------------------------------------------- |
+| Problema e nível | 1 min | Marketplace como monólito modular (catálogo, pedidos, pagamento) — Projeto A (Avançado) |
+| Demo             | 3 min | Sobe com 1 comando, cria pedido, pagamento assíncrono, recusa e estoque devolvido       |
+| Decisão técnica  | 3 min | Uma decisão e a alternativa descartada                                                  |
+| Números          | 3 min | Concorrência, seed, k6 antes/depois e o que faria diferente                             |
+
+## 1. Problema e nível
+
+- Marketplace com três áreas de negócio: **catálogo** (produtos, preço, estoque), **pedidos** (estados e cancelamento) e **pagamentos** (cobrança via gateways).
+- Nível: **Projeto A (Avançado)**. Monólito modular, arquitetura documentada (ADRs + C4) e k6 em 3 estágios.
+- Fronteiras entre módulos **garantidas por lint**, não por convenção (ADR-0002).
+
+## 2. Roteiro da demo
+
+1. `docker compose up -d` → mostrar api, worker, postgres e redis saudáveis (`docker compose ps`).
+2. `POST /catalog/products` → criar um produto de **R$ 100,00** e outro de **R$ 10,13**.
+3. `POST /orders` com `paymentMethod: CARD` no produto de R$ 100,00 → `PENDING_PAYMENT`; em seguida `GET /orders/{id}` → `PAID` (pagamento processado pelo worker via fila).
+4. `POST /orders` com cartão no produto de **R$ 10,13** → `PAYMENT_FAILED` (o provider fake recusa valores terminados em 13 centavos, ADR-0011) e **o estoque volta**.
+5. Mesmo produto com `paymentMethod: PIX` → `PAID` (Strategy: o provider é escolhido em tempo de execução).
+6. `POST /orders/{id}/cancel` duas vezes → `200` e depois `409` (estado final, ADR-0007).
+7. _(a incluir)_ Swagger UI em `/docs`, trace no Jaeger e dashboard no Grafana.
+
+## 3. Decisões candidatas para os 3 minutos
+
+| Decisão                                            | Alternativa descartada                | Por que é boa para apresentar                              |
+| -------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| Reserva atômica de estoque (ADR-0009)              | Só validar o estoque (check-then-act) | Tem número medido: corrida de 50 pedidos contra estoque 10 |
+| Monólito modular com fronteiras no lint (ADR-0002) | Microserviços                         | Mostra o lint barrando um import indevido                  |
+| Um schema do PostgreSQL por módulo (ADR-0005)      | Tudo no `public` com prefixo          | Fronteira visível no próprio banco (`\dn`)                 |
+| Worker em processo separado (ADR-0010)             | Consumers dentro da API               | Ligado ao p95 medido no k6                                 |
+
+## 4. Números medidos
+
+### Concorrência e consistência
+
+| Data  | Cenário                                                                                                  | Resultado                                                                                  | Como reproduzir                                   |
+| ----- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| 08/11 | **50 reservas simultâneas** de 1 unidade contra estoque **10** (`PrismaProductRepository` no PostgreSQL) | **10 aceitas, 40 recusadas**, estoque final **0** (nunca negativo)                         | Script com `Promise.all` de 50 `reserveStock`     |
+| 08/11 | Reserva de 2 itens em que o 2º não tem estoque                                                           | 1º item volta ao valor original (**rollback** da transação)                                | Mesmo script, item A com estoque 5 e B com 1      |
+| 08/11 | **20 cancelamentos simultâneos** do mesmo pedido via HTTP (`POST /orders/{id}/cancel`)                   | **1 × 200 e 19 × 409**; estoque devolvido **uma única vez**                                | 20 `curl` em paralelo contra a API no Docker      |
+| 08/11 | Reentrega do mesmo `OrderPlaced` com outro `jobId` (simula crash do worker)                              | Consumer respondeu `duplicate`; **1 pagamento** no banco; estoque não devolvido duas vezes | Job adicionado manualmente na fila `order-placed` |
+| 08/11 | Mesmo `OrderPlaced` com o mesmo `jobId`                                                                  | BullMQ **não criou** job novo                                                              | Idem                                              |
+
+### Seed de dados (`npm run db:seed`)
+
+| Data  | Volume                                                                                     | Tempo                     | Observações                                                |
+| ----- | ------------------------------------------------------------------------------------------ | ------------------------- | ---------------------------------------------------------- |
+| 08/11 | 5.000 produtos · 19.856 clientes · **100.000 pedidos** · 299.711 itens · 94.924 pagamentos | **~60 s** (meta: < 3 min) | Lotes de 5.000 com `createMany`; Docker Desktop no Windows |
+
+- **Reprodutível:** duas execuções geraram o mesmo hash MD5 de pedidos e de produtos (faker com seed fixa e UUID v7 determinísticos).
+- **Consistente:** 0 divergências entre total do pedido e soma dos itens, entre status e pagamento, e na regra de recusa (cartão terminado em 13 centavos).
+- Distribuição: 94.325 `PAID` · 5.066 `CANCELLED` · 599 `PAYMENT_FAILED` · 10 `PENDING_PAYMENT`.
+
+### Testes
+
+| Data  | Testes                          | Observação                                                    |
+| ----- | ------------------------------- | ------------------------------------------------------------- |
+| 08/11 | 109 testes unitários e de rotas | Coverage de `domain/` e `application/` acima do mínimo de 80% |
+
+### k6 — antes e depois
+
+_(a preencher no dia 12/11: p95, RPS e taxa de erro do baseline e da versão otimizada, gargalo identificado e evidência via `EXPLAIN ANALYZE` / clinic.js)_
+
+| Cenário              | p95 | RPS | Erro | Evidência |
+| -------------------- | --- | --- | ---- | --------- |
+| Baseline             | —   | —   | —    | —         |
+| Depois da otimização | —   | —   | —    | —         |
+
+## 5. O que faria diferente
+
+_(preencher ao fim do projeto)_ Candidatos já identificados:
+
+- **Transactional Outbox:** hoje salvar o pedido e publicar `OrderPlaced` não são atômicos; se a publicação falhar, o pedido fica em `PENDING_PAYMENT` (ADR-0009).
+- **Expiração de reservas:** se o worker nunca responder, o estoque fica reservado indefinidamente.
+- **Autenticação:** o `customerId` vem no corpo da requisição (ADR-0008).
+
+## 6. Prints
+
+_(a incluir: Grafana com métricas RED, trace ponta a ponta no Jaeger, Swagger UI, CI verde)_

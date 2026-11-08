@@ -45,16 +45,25 @@ enum OrderStatus {
   @@schema("orders")
 }
 
+/// ADR-0011: chosen by the customer in POST /orders.
+enum PaymentMethod {
+  CARD
+  PIX
+
+  @@schema("orders")
+}
+
 model Order {
-  id           String      @id @db.Uuid
+  id            String        @id @db.Uuid
   /// External identity (ADR-0008): no customers table.
-  customerId   String      @map("customer_id") @db.Uuid
-  status       OrderStatus
+  customerId    String        @map("customer_id") @db.Uuid
+  status        OrderStatus
+  paymentMethod PaymentMethod @map("payment_method")
   /// Stored to avoid summing items on every read. Money in cents.
-  totalInCents Int         @map("total_in_cents")
-  createdAt    DateTime    @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
-  items        OrderItem[]
+  totalInCents  Int           @map("total_in_cents")
+  createdAt     DateTime      @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  items         OrderItem[]
 
   @@index([customerId])
   @@map("orders")
@@ -74,4 +83,39 @@ model OrderItem {
   @@id([orderId, productId])
   @@map("order_items")
   @@schema("orders")
+}
+
+// ---------------------------------------------------------------------------
+// payments
+// ---------------------------------------------------------------------------
+
+/// Same values as orders.PaymentMethod, but owned by payments (ADR-0005).
+enum ChargeMethod {
+  CARD
+  PIX
+
+  @@map("PaymentMethod")
+  @@schema("payments")
+}
+
+enum PaymentStatus {
+  APPROVED
+  DECLINED
+
+  @@schema("payments")
+}
+
+model Payment {
+  id            String        @id @db.Uuid
+  /// One payment per order: a redelivered queue job cannot create a second one.
+  /// References orders.orders by id only: no FK across modules (ADR-0005).
+  orderId       String        @unique @map("order_id") @db.Uuid
+  method        ChargeMethod
+  amountInCents Int           @map("amount_in_cents")
+  status        PaymentStatus
+  declineReason String?       @map("decline_reason") @db.VarChar(200)
+  createdAt     DateTime      @map("created_at") @db.Timestamptz(3)
+
+  @@map("payments")
+  @@schema("payments")
 }

@@ -15,6 +15,13 @@ export const OrderStatus = {
 } as const;
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
+/** How the customer chose to pay (ADR-0011). */
+export const PaymentMethod = {
+  CARD: 'CARD',
+  PIX: 'PIX',
+} as const;
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
+
 /** Item with a snapshot of name and price at purchase time (ADR-0009). */
 export interface OrderItem {
   productId: string;
@@ -27,6 +34,7 @@ export interface OrderProps {
   id: string;
   customerId: string;
   status: OrderStatus;
+  paymentMethod: PaymentMethod;
   items: OrderItem[];
   createdAt: Date;
 }
@@ -69,6 +77,10 @@ export class Order {
 
   get status(): OrderStatus {
     return this.props.status;
+  }
+
+  get paymentMethod(): PaymentMethod {
+    return this.props.paymentMethod;
   }
 
   get createdAt(): Date {

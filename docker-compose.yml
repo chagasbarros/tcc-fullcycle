@@ -1,6 +1,6 @@
 # Local environment: `docker compose up -d` starts everything.
 # Credentials below are for local development only (never used in staging/production).
-# More services (worker, unleash, prometheus, grafana, jaeger) join as they are implemented.
+# More services (unleash, prometheus, grafana, jaeger) join as they are implemented.
 
 services:
   postgres:
@@ -66,6 +66,26 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  # Queue consumers (ADR-0010): same image as the api, different command, no HTTP.
+  worker:
+    build:
+      context: .
+      target: runtime
+    command: ['node', 'dist/worker.js']
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://marketplace:marketplace@postgres:5432/marketplace
+      REDIS_URL: redis://redis:6379
+      PAYMENT_PROVIDER_LATENCY_MS: 0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

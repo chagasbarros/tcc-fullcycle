@@ -1,16 +1,21 @@
 import { buildApp } from './app.js';
 import { createCatalogModule, PrismaProductRepository } from './modules/catalog/index.js';
+import type { OrderPlaced } from './modules/orders/index.js';
 import {
+  BullMqOrderEventPublisher,
   createOrdersModule,
-  InMemoryOrderEventPublisher,
   PrismaOrderRepository,
 } from './modules/orders/index.js';
 import { loadEnv } from './shared/config/env.js';
 import { createPrismaClient } from './shared/db/prisma.js';
 import { newId } from './shared/ids.js';
+import { createQueue, createRedisConnection, QueueName } from './shared/queue/queues.js';
 
 const env = loadEnv();
 const prisma = createPrismaClient(env.DATABASE_URL);
+const redis = createRedisConnection(env.REDIS_URL);
+// The API only publishes; the worker process consumes (ADR-0010).
+const orderPlacedQueue = createQueue<OrderPlaced>(QueueName.ORDER_PLACED, redis);
 
 // Composition: this is the only place that decides which implementations are used.
 const catalog = createCatalogModule({
@@ -20,13 +25,16 @@ const catalog = createCatalogModule({
 const orders = createOrdersModule({
   orderRepository: new PrismaOrderRepository(prisma),
   catalog: catalog.api,
-  // TODO(payments): replace with the BullMQ publisher; until then orders stay PENDING_PAYMENT.
-  eventPublisher: new InMemoryOrderEventPublisher(),
+  eventPublisher: new BullMqOrderEventPublisher(orderPlacedQueue),
   newId,
 });
 
 const app = await buildApp({ env, catalog, orders });
-app.addHook('onClose', () => prisma.$disconnect());
+app.addHook('onClose', async () => {
+  await orderPlacedQueue.close();
+  redis.disconnect();
+  await prisma.$disconnect();
+});
 
 // Graceful shutdown: stop accepting requests and finish the in-flight ones.
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

@@ -21,6 +21,7 @@ export interface OrdersUseCases {
 const idParams = z.object({ id: z.uuid() });
 const placeOrderBody = z.object({
   customerId: z.uuid(),
+  paymentMethod: z.enum(['CARD', 'PIX']),
   items: z
     .array(
       z.object({
@@ -37,6 +38,7 @@ function toResponse(order: Order) {
     id: order.id,
     customerId: order.customerId,
     status: order.status,
+    paymentMethod: order.paymentMethod,
     totalInCents: order.totalInCents,
     createdAt: order.createdAt.toISOString(),
     items: order.items.map((item) => ({

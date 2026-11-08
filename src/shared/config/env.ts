@@ -12,6 +12,8 @@ const envSchema = z.object({
   // Connection strings may carry credentials: required, no default.
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   REDIS_URL: z.url({ protocol: /^rediss?$/ }),
+  // Simulated payment gateway latency for the fake providers (ADR-0011).
+  PAYMENT_PROVIDER_LATENCY_MS: z.coerce.number().int().min(0).default(0),
 });
 
 export type Env = z.infer<typeof envSchema>;

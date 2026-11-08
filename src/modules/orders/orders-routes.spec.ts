@@ -52,7 +52,7 @@ describe('orders HTTP routes', () => {
     app.inject({
       method: 'POST',
       url: '/orders',
-      payload: { customerId: CUSTOMER, items: [{ productId, quantity }] },
+      payload: { customerId: CUSTOMER, paymentMethod: 'CARD', items: [{ productId, quantity }] },
     });
 
   it('POST /orders creates a pending order, reserves stock and publishes OrderPlaced', async () => {
@@ -63,6 +63,7 @@ describe('orders HTTP routes', () => {
     expect(response.headers.location).toBe(`/orders/${order.id}`);
     expect(order).toMatchObject({
       customerId: CUSTOMER,
+      paymentMethod: 'CARD',
       status: 'PENDING_PAYMENT',
       totalInCents: 69_980,
       items: [
@@ -79,6 +80,7 @@ describe('orders HTTP routes', () => {
     expect(events.published.at(-1)).toEqual({
       orderId: order.id,
       customerId: CUSTOMER,
+      paymentMethod: 'CARD',
       totalInCents: 69_980,
     });
   });
@@ -117,7 +119,11 @@ describe('orders HTTP routes', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/orders',
-      payload: { customerId: CUSTOMER, items: [{ productId: v7(), quantity: 1 }] },
+      payload: {
+        customerId: CUSTOMER,
+        paymentMethod: 'CARD',
+        items: [{ productId: v7(), quantity: 1 }],
+      },
     });
 
     expect(response.statusCode).toBe(422);
@@ -130,10 +136,22 @@ describe('orders HTTP routes', () => {
 
   it.each([
     { name: 'missing customerId', payload: { items: [{ productId: v7(), quantity: 1 }] } },
-    { name: 'empty items', payload: { customerId: CUSTOMER, items: [] } },
+    {
+      name: 'unknown paymentMethod',
+      payload: {
+        customerId: CUSTOMER,
+        paymentMethod: 'BOLETO',
+        items: [{ productId: v7(), quantity: 1 }],
+      },
+    },
+    { name: 'empty items', payload: { customerId: CUSTOMER, paymentMethod: 'CARD', items: [] } },
     {
       name: 'zero quantity',
-      payload: { customerId: CUSTOMER, items: [{ productId: v7(), quantity: 0 }] },
+      payload: {
+        customerId: CUSTOMER,
+        paymentMethod: 'CARD',
+        items: [{ productId: v7(), quantity: 0 }],
+      },
     },
   ])('POST /orders answers 400 for $name', async ({ payload }) => {
     const response = await app.inject({ method: 'POST', url: '/orders', payload });

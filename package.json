@@ -23,7 +23,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "worker": "tsx watch --env-file-if-exists=.env src/worker.ts",
     "start:worker": "node dist/worker.js",
-    "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts"
+    "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.6.0",
+    "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^10.14.0",
@@ -43,6 +45,7 @@
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
     "prisma": "^7.10.1",
+    "testcontainers": "^12.2.1",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",

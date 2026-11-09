@@ -98,9 +98,9 @@ modules/<name>/
 - Cada módulo é dono das suas tabelas. Sem JOIN entre tabelas de módulos diferentes; use a API pública do outro módulo.
 - Comunicação `orders → payments` é assíncrona via fila (evento `OrderPlaced`). `payments → orders` devolve o resultado via fila (`PaymentApproved` / `PaymentFailed`).
 
-**SOLID + 1 design pattern justificado (⏳ provisório até a revisão do módulo 4 em 09/11):** **Strategy** em `payments` (`PaymentProvider` com implementações `FakeCardProvider`, `FakePixProvider`), escolhida em tempo de execução. Justificar em ADR (aberto/fechado: novo meio de pagamento sem alterar o caso de uso).
+**SOLID + 1 design pattern justificado (⏳ provisório até a revisão do módulo 4 em 10/11):** **Strategy** em `payments` (`PaymentProvider` com implementações `FakeCardProvider`, `FakePixProvider`), escolhida em tempo de execução. Justificar em ADR (aberto/fechado: novo meio de pagamento sem alterar o caso de uso).
 
-**Database Pattern (⏳ provisório até 09/11):** **Repository** — interfaces em `application/`, implementações Prisma em `infrastructure/`. Permite testar casos de uso com repositórios em memória. Registrar em ADR, com a alternativa descartada (Active Record / Prisma direto nos services).
+**Database Pattern (⏳ provisório até 10/11):** **Repository** — interfaces em `application/`, implementações Prisma em `infrastructure/`. Permite testar casos de uso com repositórios em memória. Registrar em ADR, com a alternativa descartada (Active Record / Prisma direto nos services).
 
 ## 5. Dados
 
@@ -171,15 +171,15 @@ npm run k6:after              # k6 depois da otimização
 
 ## 8. Plano de execução (até 13/11)
 
-| Dia    | Foco                                                                                                                 |
-| ------ | -------------------------------------------------------------------------------------------------------------------- |
-| Sáb 07 | Setup: repo, TS, ESLint/boundaries, compose, Prisma, esqueleto dos 3 módulos, ADR-0001 (Fastify) ✅                  |
-| Dom 08 | Domínio e casos de uso de catalog/orders/payments, seed 100k, ADR-0002. Patterns atrás de interfaces (trocáveis)     |
-| Seg 09 | **Revisar módulo 4 e fechar ADR-0003/0004**; testes unit/integração/contrato, coverage threshold, OpenAPI + Spectral |
-| Ter 10 | CI completo, ambientes e segredos, logs, métricas RED, trace, SLO                                                    |
-| Qua 11 | Cache + flag, fila idempotente, C4, ADRs restantes, deploy no Render                                                 |
-| Qui 12 | k6 baseline → achar gargalo → otimizar → k6 after → `docs/desempenho.md`                                             |
-| Sex 13 | README final, `docs/ia.md`, CONTRIBUTORS, CI verde, **entrega**                                                      |
+| Dia    | Foco                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------- |
+| Sáb 07 | Setup: repo, TS, ESLint/boundaries, compose, Prisma, esqueleto dos 3 módulos, ADR-0001 (Fastify) ✅                 |
+| Dom 08 | Domínio e casos de uso de catalog/orders/payments, seed 100k, ADR-0002. Patterns atrás de interfaces (trocáveis) ✅ |
+| Seg 09 | Testes de integração (Testcontainers) e contrato (Pact), coverage threshold, OpenAPI + Spectral + Swagger UI        |
+| Ter 10 | **Revisar módulo 4 e fechar ADR-0003/0004**; CI completo, ambientes e segredos, logs, métricas RED, trace, SLO      |
+| Qua 11 | Cache + flag, fila idempotente, C4, ADRs restantes, deploy no Render                                                |
+| Qui 12 | k6 baseline → achar gargalo → otimizar → k6 after → `docs/desempenho.md`                                            |
+| Sex 13 | README final, `docs/ia.md`, CONTRIBUTORS, CI verde, **entrega**                                                     |
 
 Se o prazo apertar, priorize nesta ordem: sistema rodando com 1 comando → testes + CI verde → docs obrigatórios → k6 com antes/depois → observabilidade → flag/deploy.
 
@@ -206,7 +206,7 @@ Se o prazo apertar, priorize nesta ordem: sistema rodando com 1 comando → test
 
 ## 12. Pendências
 
-- [ ] **Dependência de decisão — Ebook de System Design, módulo 4 (resolver em 09/11).** O autor ainda não teve acesso ao módulo 4. Até lá, o design pattern (Strategy) e o Database Pattern (Repository) são **provisórios**. Ao obter o módulo:
+- [ ] **Dependência de decisão — Ebook de System Design, módulo 4 (resolver em 10/11, adiado de 09/11).** O autor ainda não teve acesso ao módulo 4. Até lá, o design pattern (Strategy) e o Database Pattern (Repository) são **provisórios**. Ao obter o módulo:
   1. Comparar os padrões recomendados no módulo com Strategy e Repository (e avaliar Transactional Outbox, que combina com a fila idempotente).
   2. Decidir: manter ou trocar. Escrever ADR-0003 e ADR-0004 com a alternativa descartada.
   3. Remover os marcadores ⏳ deste arquivo.

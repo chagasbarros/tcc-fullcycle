@@ -1,4 +1,9 @@
-import type { FastifyInstance, FastifyServerOptions, RawRequestDefaultExpression } from 'fastify';
+import {
+  LogController,
+  type FastifyInstance,
+  type FastifyServerOptions,
+  type RawRequestDefaultExpression,
+} from 'fastify';
 import { newId } from '../ids.js';
 
 export const REQUEST_ID_HEADER = 'x-request-id';
@@ -15,7 +20,7 @@ export function requestIdFrom(request: RawRequestDefaultExpression): string {
 /** Fastify options: every log line of a request carries `requestId`. */
 export const requestIdOptions = {
   genReqId: requestIdFrom,
-  requestIdLogLabel: 'requestId',
+  logController: new LogController({ requestIdLogLabel: 'requestId' }),
 } satisfies FastifyServerOptions;
 
 /** Echoes the id back, so a client can quote it when reporting a problem. */

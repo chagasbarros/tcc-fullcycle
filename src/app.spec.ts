@@ -94,6 +94,24 @@ describe('app', () => {
     });
   });
 
+  it('exposes RED metrics labelled by route template, not by raw URL', async () => {
+    await app.inject({ method: 'GET', url: '/orders/01900000-0000-7000-8000-000000000001' });
+    await app.inject({ method: 'GET', url: '/random/url/123' });
+
+    const response = await app.inject({ method: 'GET', url: '/metrics' });
+    const body = response.body;
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('text/plain');
+    expect(body).toContain(
+      'http_request_duration_seconds_count{method="GET",route="/orders/:id",status_code="404"} 1',
+    );
+    expect(body).toContain('route="unmatched",status_code="404"');
+    expect(body).not.toContain('01900000-0000-7000-8000-000000000001');
+    expect(body).not.toContain('route="/metrics"');
+    expect(body).toContain('nodejs_eventloop_lag_seconds');
+  });
+
   it('answers malformed JSON with 400 Problem Details', async () => {
     const response = await app.inject({
       method: 'POST',

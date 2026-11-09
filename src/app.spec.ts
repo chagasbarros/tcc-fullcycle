@@ -58,6 +58,42 @@ describe('app', () => {
     expect(response.json()).toMatchObject({ status: 404, title: 'Not Found', instance: '/nope' });
   });
 
+  describe('x-request-id', () => {
+    it('generates a UUID v7 when the client sends none', async () => {
+      const response = await app.inject({ method: 'GET', url: '/health' });
+
+      expect(response.headers['x-request-id']).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+    });
+
+    it('reuses a safe id sent by the client, also on error responses', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/nope',
+        headers: { 'x-request-id': 'checkout-42.abc_DEF' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.headers['x-request-id']).toBe('checkout-42.abc_DEF');
+    });
+
+    it.each([
+      ['too long', 'a'.repeat(65)],
+      ['with spaces or line breaks', 'fake\nlog line'],
+      ['with JSON characters', '{"level":50}'],
+    ])('replaces an unsafe id (%s)', async (_case, unsafe) => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { 'x-request-id': unsafe },
+      });
+
+      expect(response.headers['x-request-id']).not.toBe(unsafe);
+      expect(response.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
+    });
+  });
+
   it('answers malformed JSON with 400 Problem Details', async () => {
     const response = await app.inject({
       method: 'POST',

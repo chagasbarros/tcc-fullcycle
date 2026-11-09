@@ -16,6 +16,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
+# The API contract served by the Swagger UI at /docs.
+COPY docs/openapi.yaml ./docs/openapi.yaml
 USER node
 EXPOSE 3000
 CMD ["node", "dist/server.js"]

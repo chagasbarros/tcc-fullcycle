@@ -101,6 +101,26 @@ describe('orders HTTP routes', () => {
     expect(response.headers['content-type']).toContain('application/problem+json');
   });
 
+  it.each([
+    ['no Content-Type', {}],
+    ['an unknown Content-Type', { 'content-type': 'application/octet-stream' }],
+  ])(
+    'POST /orders/:id/cancel ignores a stray body with %s (was 415, found by Pact)',
+    async (_case, headers) => {
+      const { id } = (await place(1)).json<{ id: string }>();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/orders/${id}/cancel`,
+        headers,
+        payload: 'ignored',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ status: 'CANCELLED' });
+    },
+  );
+
   it('POST /orders/:id/cancel cancels and gives stock back; a second cancel is 409', async () => {
     const before = await stock();
     const { id } = (await place(1)).json<{ id: string }>();

@@ -78,9 +78,21 @@ export function ordersRoutes(useCases: OrdersUseCases): FastifyPluginAsync {
       return toResponse(await useCases.getOrder.execute(id));
     });
 
-    app.post('/:id/cancel', async (request) => {
-      const { id } = idParams.parse(request.params);
-      return toResponse(await useCases.cancelOrder.execute(id));
+    // Cancel takes no body. Some HTTP clients still send an empty chunked body without
+    // Content-Type, which Fastify rejects with 415 (found by the Pact contract test).
+    // In this child context only, any body is drained and ignored.
+    void app.register((bodyless) => {
+      bodyless.addContentTypeParser('*', (_request, payload, done) => {
+        payload.resume();
+        payload.on('end', () => done(null, undefined));
+      });
+
+      bodyless.post('/:id/cancel', async (request) => {
+        const { id } = idParams.parse(request.params);
+        return toResponse(await useCases.cancelOrder.execute(id));
+      });
+
+      return Promise.resolve();
     });
 
     return Promise.resolve();

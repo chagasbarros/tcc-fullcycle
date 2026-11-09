@@ -139,11 +139,11 @@ npm run k6:after              # k6 depois da otimização
 - [ ] SOLID + design pattern justificado → `docs/adr/0003-design-pattern.md` (⏳ após módulo 4)
 - [ ] Database Pattern → `docs/adr/0004-database-pattern.md` (⏳ após módulo 4)
 - [x] Testes unitários (`*.spec.ts` ao lado do código), integração (`tests/integration/`, Testcontainers), contrato de API (`tests/contract/`, Pact)
-- [ ] Coverage mínimo **declarado no pipeline** (`vitest.config.ts` → `thresholds`, padrão: 80% linhas em `domain/` e `application/`)
+- [x] Coverage mínimo **declarado no pipeline** (`vitest.config.ts` → `thresholds`, padrão: 80% linhas em `domain/` e `application/`)
 
 ### Entrega e operação
 
-- [ ] `.github/workflows/ci.yml`: lint → typecheck → testes → coverage → `npm audit --audit-level=high` → Trivy → gitleaks → spectral
+- [x] `.github/workflows/ci.yml`: lint → typecheck → testes → coverage → `npm audit --audit-level=high` → Trivy → gitleaks → spectral
 - [ ] Dois ambientes (`staging`, `production`) via GitHub Environments; config só por variável de ambiente; `.env.example` versionado, `.env` no `.gitignore`; config validada com Zod no boot
 - [ ] Logs estruturados (pino, com `requestId` e `traceId`)
 - [ ] Métricas **RED** em `/metrics` (Rate, Errors, Duration — histograma por rota/status) + dashboard Grafana provisionado em `ops/grafana/`

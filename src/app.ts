@@ -6,6 +6,7 @@ import { registerApiDocs } from './shared/http/api-docs.js';
 import { registerMetrics } from './shared/http/metrics.js';
 import { registerProblemDetails } from './shared/http/problem-details.js';
 import { registerRequestIdHeader, requestIdOptions } from './shared/http/request-id.js';
+import { registerRouteSpanName } from './shared/http/tracing.js';
 
 export interface AppDeps {
   env: Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
@@ -33,6 +34,7 @@ export async function buildApp({ env, catalog, orders }: AppDeps): Promise<Fasti
   registerRequestIdHeader(app);
   registerProblemDetails(app);
   registerMetrics(app);
+  registerRouteSpanName(app);
 
   app.get('/health', () => ({ status: 'ok' }));
   await registerApiDocs(app);

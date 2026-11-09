@@ -1,6 +1,7 @@
 # Local environment: `docker compose up -d` starts everything.
 # Credentials below are for local development only (never used in staging/production).
-# More services (unleash, prometheus, grafana, jaeger) join as they are implemented.
+# Observability: Grafana http://localhost:3001 · Prometheus http://localhost:9090 · Jaeger http://localhost:16686
+# More services (unleash) join as they are implemented.
 
 services:
   postgres:
@@ -51,6 +52,8 @@ services:
       LOG_LEVEL: info
       DATABASE_URL: postgresql://marketplace:marketplace@postgres:5432/marketplace
       REDIS_URL: redis://redis:6379
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_SERVICE_NAME: marketplace-api
     ports:
       - '3000:3000'
     depends_on:
@@ -72,13 +75,15 @@ services:
     build:
       context: .
       target: runtime
-    command: ['node', 'dist/worker.js']
+    command: ['node', '--import', './dist/instrumentation.js', 'dist/worker.js']
     environment:
       NODE_ENV: development
       LOG_LEVEL: info
       DATABASE_URL: postgresql://marketplace:marketplace@postgres:5432/marketplace
       REDIS_URL: redis://redis:6379
       PAYMENT_PROVIDER_LATENCY_MS: 0
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_SERVICE_NAME: marketplace-worker
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,6 +91,52 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+
+  # Traces: the API and the worker send spans over OTLP/HTTP (src/instrumentation.ts).
+  # In-memory storage: traces are lost on restart (fine for local use and the demo).
+  jaeger:
+    image: jaegertracing/jaeger:2.8.0
+    ports:
+      - '16686:16686' # UI
+      - '4318:4318' # OTLP/HTTP, also used by `npm run dev` with OTEL_EXPORTER_OTLP_ENDPOINT
+
+  # Scrapes /metrics of the API every 5 s (ops/prometheus/prometheus.yml).
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - '9090:9090'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:9090/-/ready']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Datasource and RED dashboard are provisioned from ops/grafana (nothing to click).
+  # Anonymous read-only access, local use only.
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/marketplace-red.json
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - '3001:3000'
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/health || exit 1']
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres-data:

@@ -14,6 +14,10 @@ const envSchema = z.object({
   REDIS_URL: z.url({ protocol: /^rediss?$/ }),
   // Simulated payment gateway latency for the fake providers (ADR-0011).
   PAYMENT_PROVIDER_LATENCY_MS: z.coerce.number().int().min(0).default(0),
+  // Tracing (src/instrumentation.ts reads these before the app starts; validated here too).
+  // Unset = tracing off.
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+  OTEL_SERVICE_NAME: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

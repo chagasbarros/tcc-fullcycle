@@ -26,4 +26,5 @@ COPY --from=build /app/dist ./dist
 COPY docs/openapi.yaml ./docs/openapi.yaml
 USER node
 EXPOSE 3000
-CMD ["node", "dist/server.js"]
+# --import loads OpenTelemetry before the app (it only turns on if OTEL_EXPORTER_OTLP_ENDPOINT is set).
+CMD ["node", "--import", "./dist/instrumentation.js", "dist/server.js"]

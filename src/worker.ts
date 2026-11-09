@@ -1,4 +1,6 @@
 import { pino } from 'pino';
+// Already loaded by `--import` (same module instance); imported here only for the shutdown.
+import { shutdownTracing } from './instrumentation.js';
 import { createCatalogModule, PrismaProductRepository } from './modules/catalog/index.js';
 import {
   BullMqOrderEventPublisher,
@@ -83,6 +85,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
         redis.disconnect();
         return prisma.$disconnect();
       })
+      .then(() => shutdownTracing())
       .then(
         () => process.exit(0),
         (error: unknown) => {

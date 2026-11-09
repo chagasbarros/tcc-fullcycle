@@ -138,7 +138,7 @@ npm run k6:after              # k6 depois da otimização
 - [x] Monólito modular → `docs/adr/0002-monolito-modular.md` (descartado: microserviços)
 - [ ] SOLID + design pattern justificado → `docs/adr/0003-design-pattern.md` (⏳ após módulo 4)
 - [ ] Database Pattern → `docs/adr/0004-database-pattern.md` (⏳ após módulo 4)
-- [ ] Testes unitários (`*.spec.ts` ao lado do código), integração (`tests/integration/`, Testcontainers), contrato de API (`tests/contract/`, Pact)
+- [x] Testes unitários (`*.spec.ts` ao lado do código), integração (`tests/integration/`, Testcontainers), contrato de API (`tests/contract/`, Pact)
 - [ ] Coverage mínimo **declarado no pipeline** (`vitest.config.ts` → `thresholds`, padrão: 80% linhas em `domain/` e `application/`)
 
 ### Entrega e operação

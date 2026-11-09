@@ -58,9 +58,14 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 ### Testes
 
-| Data  | Testes                          | Observação                                                    |
-| ----- | ------------------------------- | ------------------------------------------------------------- |
-| 08/11 | 109 testes unitários e de rotas | Coverage de `domain/` e `application/` acima do mínimo de 80% |
+| Data  | Testes                                                                                   | Observação                                                                                   |
+| ----- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 08/11 | 109 testes unitários e de rotas                                                          | Coverage de `domain/` e `application/` acima do mínimo de 80%                                |
+| 09/11 | 112 testes unitários e de rotas                                                          | Inclui regressão do bug encontrado pelo Pact (abaixo)                                        |
+| 09/11 | **15 testes de integração** (Testcontainers: PostgreSQL 16 + Redis 7 reais) em **~18 s** | Repositórios Prisma, concorrência, CHECKs, fluxo completo pedido → fila → pagamento → pedido |
+| 09/11 | **7 interações** de contrato Pact (consumidor `storefront` → provedor `marketplace-api`) | Verificação do provedor contra a API HTTP real                                               |
+
+**Bug real encontrado pelo teste de contrato (09/11):** `POST /orders/{id}/cancel` respondia **415 Unsupported Media Type** quando o cliente mandava um corpo vazio em _chunked_ sem `Content-Type` (o verificador do Pact faz isso, e alguns clientes HTTP também). Unit tests com `inject` não pegavam, porque não reproduzem esse formato de requisição. Correção: a rota, que não usa corpo, passou a ignorá-lo; um teste de regressão falha sem a correção e passa com ela. Bom exemplo para a apresentação de **por que testar o contrato e não só a lógica**.
 
 ### k6 — antes e depois
 

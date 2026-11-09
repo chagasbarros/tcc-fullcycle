@@ -25,7 +25,8 @@
     "start:worker": "node dist/worker.js",
     "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "openapi:lint": "spectral lint docs/openapi.yaml --fail-severity=warn"
+    "openapi:lint": "spectral lint docs/openapi.yaml --fail-severity=warn",
+    "test:contract": "vitest run --config vitest.contract.config.ts consumer && vitest run --config vitest.contract.config.ts provider"
   },
   "repository": {
     "type": "git",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.6.0",
+    "@pact-foundation/pact": "^17.1.4",
     "@stoplight/spectral-cli": "^6.17.1",
     "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^22.20.5",

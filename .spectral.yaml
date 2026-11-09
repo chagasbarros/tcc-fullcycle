@@ -1,0 +1,2 @@
+# OpenAPI lint (npm run openapi:lint). Spectral's built-in OpenAPI ruleset.
+extends: ['spectral:oas']

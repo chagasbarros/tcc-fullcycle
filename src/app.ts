@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { CatalogModule } from './modules/catalog/index.js';
 import type { OrdersModule } from './modules/orders/index.js';
 import type { Env } from './shared/config/env.js';
+import { registerApiDocs } from './shared/http/api-docs.js';
 import { registerProblemDetails } from './shared/http/problem-details.js';
 
 export interface AppDeps {
@@ -22,6 +23,7 @@ export async function buildApp({ env, catalog, orders }: AppDeps): Promise<Fasti
   registerProblemDetails(app);
 
   app.get('/health', () => ({ status: 'ok' }));
+  await registerApiDocs(app);
 
   await app.register(catalog.routes, { prefix: '/catalog' });
   await app.register(orders.routes, { prefix: '/orders' });

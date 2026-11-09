@@ -39,6 +39,17 @@ describe('app', () => {
     expect(response.json()).toEqual({ status: 'ok' });
   });
 
+  it('serves the hand-written OpenAPI contract and the Swagger UI at /docs', async () => {
+    const spec = await app.inject({ method: 'GET', url: '/docs/json' });
+    expect(spec.statusCode).toBe(200);
+    expect(spec.json()).toMatchObject({ openapi: '3.1.0', info: { title: 'Marketplace API' } });
+    expect(Object.keys(spec.json<{ paths: object }>().paths)).toContain('/orders');
+
+    const ui = await app.inject({ method: 'GET', url: '/docs/' });
+    expect(ui.statusCode).toBe(200);
+    expect(ui.headers['content-type']).toContain('text/html');
+  });
+
   it('answers unknown routes with 404 Problem Details', async () => {
     const response = await app.inject({ method: 'GET', url: '/nope' });
 

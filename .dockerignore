@@ -6,5 +6,6 @@ coverage
 .env.*
 !.env.example
 docs
+!docs/openapi.yaml
 *.md
 src/shared/db/generated

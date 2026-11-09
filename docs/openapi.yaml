@@ -28,6 +28,7 @@ paths:
       tags: [health]
       operationId: getHealth
       summary: Verifica se a API está no ar
+      description: Usado pelo healthcheck do Docker Compose e do Render.
       responses:
         '200':
           description: API saudável
@@ -46,6 +47,7 @@ paths:
       tags: [catalog]
       operationId: listProducts
       summary: Lista produtos com paginação
+      description: Lista paginada (offset), ordenada por ID. Retorna também o total de produtos.
       parameters:
         - name: page
           in: query
@@ -66,6 +68,7 @@ paths:
       tags: [catalog]
       operationId: createProduct
       summary: Cria um produto
+      description: Preço em centavos (inteiro). Responde 201 com o header `Location` do novo produto.
       requestBody:
         required: true
         content:
@@ -93,6 +96,7 @@ paths:
       tags: [catalog]
       operationId: getProduct
       summary: Busca um produto pelo ID
+      description: Retorna o produto com preço e estoque atuais.
       parameters:
         - name: id
           in: path
@@ -148,6 +152,7 @@ paths:
       tags: [orders]
       operationId: getOrder
       summary: Busca um pedido pelo ID
+      description: Retorna o pedido com o status atual. Como o pagamento é assíncrono, consulte este endpoint para acompanhar `PENDING_PAYMENT` → `PAID` / `PAYMENT_FAILED`.
       parameters:
         - $ref: '#/components/parameters/OrderId'
       responses:

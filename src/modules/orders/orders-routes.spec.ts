@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { registerProblemDetails } from '../../shared/http/problem-details.js';
 import { createCatalogModule, InMemoryProductRepository } from '../catalog/index.js';
 import { createOrdersModule } from './index.js';
+import { InMemoryIdempotencyLock } from './infrastructure/in-memory-idempotency-lock.js';
 import { InMemoryOrderEventPublisher } from './infrastructure/in-memory-order-event-publisher.js';
 import { InMemoryOrderRepository } from './infrastructure/in-memory-order-repository.js';
 
@@ -14,6 +15,7 @@ describe('orders HTTP routes', () => {
   let app: FastifyInstance;
   let events: InMemoryOrderEventPublisher;
   let productId: string;
+  const lock = new InMemoryIdempotencyLock();
 
   beforeAll(async () => {
     const catalog = createCatalogModule({
@@ -25,6 +27,7 @@ describe('orders HTTP routes', () => {
       orderRepository: new InMemoryOrderRepository(),
       catalog: catalog.api,
       eventPublisher: events,
+      idempotencyLock: lock,
       newId: v7,
     });
 
@@ -178,5 +181,71 @@ describe('orders HTTP routes', () => {
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toMatchObject({ status: 400, title: 'Bad Request' });
+  });
+
+  describe('Idempotency-Key header (ADR-0016)', () => {
+    const placeWithKey = (key: string, quantity = 1) =>
+      app.inject({
+        method: 'POST',
+        url: '/orders',
+        headers: { 'idempotency-key': key },
+        payload: { customerId: CUSTOMER, paymentMethod: 'PIX', items: [{ productId, quantity }] },
+      });
+
+    it('a retry answers 201 with the same order, flagged as a replay, without reserving again', async () => {
+      const before = await stock();
+      const published = events.published.length;
+
+      const first = await placeWithKey('retry-me');
+      const retry = await placeWithKey('retry-me');
+
+      expect(first.statusCode).toBe(201);
+      expect(first.headers['idempotent-replayed']).toBeUndefined();
+      expect(retry.statusCode).toBe(201);
+      expect(retry.headers['idempotent-replayed']).toBe('true');
+      expect(retry.json<{ id: string }>().id).toBe(first.json<{ id: string }>().id);
+      expect(retry.headers.location).toBe(first.headers.location);
+      expect(await stock()).toBe(before - 1);
+      expect(events.published).toHaveLength(published + 1);
+    });
+
+    it('the same key for a different order answers 422 Problem Details', async () => {
+      await placeWithKey('reused-key', 1);
+
+      const response = await placeWithKey('reused-key', 2);
+
+      expect(response.statusCode).toBe(422);
+      expect(response.headers['content-type']).toContain('application/problem+json');
+      expect(response.json<{ detail: string }>().detail).toContain('reused-key');
+    });
+
+    it('while another request holds the key: 409 + Retry-After, nothing reserved; afterwards it works', async () => {
+      const before = await stock();
+
+      const busy = await lock.runExclusive(`${CUSTOMER}:in-flight`, () =>
+        placeWithKey('in-flight'),
+      );
+
+      expect(busy).toMatchObject({ acquired: true });
+      const response = busy.acquired ? busy.result : undefined;
+      expect(response?.statusCode).toBe(409);
+      expect(response?.headers['retry-after']).toBe('1');
+      expect(response?.json<{ detail: string }>().detail).toContain('in progress');
+      expect(await stock()).toBe(before);
+
+      expect((await placeWithKey('in-flight')).statusCode).toBe(201);
+    });
+
+    it.each([
+      ['too long', 'k'.repeat(256)],
+      ['with spaces', 'two words'],
+    ])('an invalid key (%s) answers 400', async (_case, key) => {
+      const response = await placeWithKey(key);
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json<{ errors: { path: string }[] }>().errors[0]?.path).toBe(
+        'idempotency-key',
+      );
+    });
   });
 });

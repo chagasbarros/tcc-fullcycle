@@ -4,6 +4,7 @@ import { buildApp } from './app.js';
 import { createCatalogModule, InMemoryProductRepository } from './modules/catalog/index.js';
 import {
   createOrdersModule,
+  InMemoryIdempotencyLock,
   InMemoryOrderEventPublisher,
   InMemoryOrderRepository,
 } from './modules/orders/index.js';
@@ -23,6 +24,7 @@ describe('app', () => {
         orderRepository: new InMemoryOrderRepository(),
         catalog: catalog.api,
         eventPublisher: new InMemoryOrderEventPublisher(),
+        idempotencyLock: new InMemoryIdempotencyLock(),
         newId: () => 'unused',
       }),
     });

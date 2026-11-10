@@ -5,12 +5,27 @@ import type { OrderRepository } from '../application/order-repository.js';
 export class InMemoryOrderRepository implements OrderRepository {
   private readonly orders = new Map<string, Order>();
 
-  create(order: Order): Promise<void> {
+  create(order: Order): Promise<boolean> {
     if (this.orders.has(order.id)) {
       return Promise.reject(new Error(`order ${order.id} already exists`));
     }
+    const key = order.idempotencyKey;
+    if (key !== null && this.findSync(order.customerId, key)) {
+      return Promise.resolve(false); // same rule as the UNIQUE index in PostgreSQL
+    }
     this.orders.set(order.id, copy(order));
-    return Promise.resolve();
+    return Promise.resolve(true);
+  }
+
+  findByIdempotencyKey(customerId: string, idempotencyKey: string): Promise<Order | null> {
+    const order = this.findSync(customerId, idempotencyKey);
+    return Promise.resolve(order ? copy(order) : null);
+  }
+
+  private findSync(customerId: string, idempotencyKey: string): Order | undefined {
+    return [...this.orders.values()].find(
+      (o) => o.customerId === customerId && o.idempotencyKey === idempotencyKey,
+    );
   }
 
   findById(id: string): Promise<Order | null> {
@@ -36,5 +51,6 @@ function copy(order: Order): Order {
     paymentMethod: order.paymentMethod,
     items: [...order.items],
     createdAt: order.createdAt,
+    ...(order.idempotencyKey === null ? {} : { idempotencyKey: order.idempotencyKey }),
   });
 }

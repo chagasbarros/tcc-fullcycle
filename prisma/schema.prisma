@@ -54,17 +54,22 @@ enum PaymentMethod {
 }
 
 model Order {
-  id            String        @id @db.Uuid
+  id             String        @id @db.Uuid
   /// External identity (ADR-0008): no customers table.
-  customerId    String        @map("customer_id") @db.Uuid
-  status        OrderStatus
-  paymentMethod PaymentMethod @map("payment_method")
+  customerId     String        @map("customer_id") @db.Uuid
+  status         OrderStatus
+  paymentMethod  PaymentMethod @map("payment_method")
   /// Stored to avoid summing items on every read. Money in cents.
-  totalInCents  Int           @map("total_in_cents")
-  createdAt     DateTime      @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-  items         OrderItem[]
+  totalInCents   Int           @map("total_in_cents")
+  createdAt      DateTime      @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  /// Idempotency-Key header of POST /orders (ADR-0016). NULL when the client sent none.
+  idempotencyKey String?       @map("idempotency_key") @db.VarChar(255)
+  items          OrderItem[]
 
+  /// Same key twice for the same customer is impossible, even under concurrency.
+  /// NULLs do not collide, so orders without a key are unaffected.
+  @@unique([customerId, idempotencyKey])
   @@index([customerId])
   @@map("orders")
   @@schema("orders")

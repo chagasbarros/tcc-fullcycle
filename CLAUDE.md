@@ -119,6 +119,7 @@ npm run db:migrate            # prisma migrate
 npm run db:generate           # gera o Prisma Client (necessário após mudar prisma/schema.prisma)
 npm run db:seed               # 100k+ pedidos sintéticos
 # Observabilidade (com o compose no ar): Grafana http://localhost:3001 · Prometheus :9090 · Jaeger http://localhost:16686
+# Feature flags: Unleash http://localhost:4242 (admin / unleash4all, só local)
 npm run lint                  # eslint (inclui boundaries)
 npm run typecheck             # tsc --noEmit
 npm test                      # unit
@@ -150,7 +151,7 @@ npm run k6:after              # k6 depois da otimização
 - [x] Métricas **RED** em `/metrics` (Rate, Errors, Duration — histograma por rota/status) + dashboard Grafana provisionado em `ops/grafana/`
 - [x] **1 trace** ponta a ponta: `POST /orders` → fila → worker de pagamento, visível no Jaeger
 - [x] **1 SLO declarado** em `docs/slo.md` (padrão: 99% das requisições `GET /catalog/products` com p95 < 200 ms e taxa de erro < 1% em 30 dias)
-- [ ] **1 feature flag** (Unleash): `catalog-cache-enabled` — liga/desliga o cache do catálogo (também serve de kill switch e para o antes/depois do k6)
+- [x] **1 feature flag** (Unleash): `catalog-cache-enabled` — liga/desliga o cache do catálogo (também serve de kill switch e para o antes/depois do k6)
 - [ ] Estratégia de deploy registrada em ADR (padrão: deploy contínuo no Render com health check + rollback; flag como mecanismo de liberação gradual)
 
 ### Arquitetura e desempenho

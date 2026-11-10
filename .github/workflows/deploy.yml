@@ -1,0 +1,85 @@
+name: Deploy
+
+# Continuous delivery to Render (ADR-0018):
+#   green CI on main -> staging (automatic) -> production (waits for approval).
+# Rollback: run this workflow by hand with an earlier commit of main.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit of main to deploy (empty = latest main). Use an older one to roll back.
+        required: false
+        default: ''
+
+# One deploy at a time; a newer one waits instead of cancelling one in progress.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Pick the commit
+    # Only once Render is set up (repository variable DEPLOY_ENABLED=true, docs/deploy.md),
+    # and only after CI passed on a push to main (the merge) or when started by hand.
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - id: sha
+        env:
+          REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.workflow_run.head_sha }}
+        run: |
+          sha="$(git rev-parse --verify "${REQUESTED:-origin/main}^{commit}")"
+          # Only commits that are part of main (already went through CI) can be deployed.
+          git merge-base --is-ancestor "$sha" origin/main ||
+            { echo "::error::$sha is not on main"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Deploying $(git log -1 --format='%h %s' "$sha")"
+
+  staging:
+    name: Staging
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Deploy and wait until live
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          APP_URL: ${{ vars.APP_URL }}
+          COMMIT_SHA: ${{ needs.resolve.outputs.sha }}
+        run: bash .github/scripts/render-deploy.sh
+
+  production:
+    name: Production
+    needs: [resolve, staging]
+    runs-on: ubuntu-latest
+    # The "production" GitHub Environment requires a reviewer: the job waits for approval.
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Deploy and wait until live
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          APP_URL: ${{ vars.APP_URL }}
+          COMMIT_SHA: ${{ needs.resolve.outputs.sha }}
+        run: bash .github/scripts/render-deploy.sh

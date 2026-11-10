@@ -30,13 +30,14 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 ## 3. Decisões candidatas para os 3 minutos
 
-| Decisão                                            | Alternativa descartada                | Por que é boa para apresentar                                  |
-| -------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
-| Reserva atômica de estoque (ADR-0009)              | Só validar o estoque (check-then-act) | Tem número medido: corrida de 50 pedidos contra estoque 10     |
-| Monólito modular com fronteiras no lint (ADR-0002) | Microserviços                         | Mostra o lint barrando um import indevido                      |
-| Um schema do PostgreSQL por módulo (ADR-0005)      | Tudo no `public` com prefixo          | Fronteira visível no próprio banco (`\dn`)                     |
-| Worker em processo separado (ADR-0010)             | Consumers dentro da API               | Ligado ao p95 medido no k6                                     |
-| Trace automático com OpenTelemetry (ADR-0013)      | Spans manuais                         | 1 pedido = 34 spans em 2 processos, mostrado ao vivo no Jaeger |
+| Decisão                                            | Alternativa descartada                        | Por que é boa para apresentar                                    |
+| -------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------- |
+| Reserva atômica de estoque (ADR-0009)              | Só validar o estoque (check-then-act)         | Tem número medido: corrida de 50 pedidos contra estoque 10       |
+| Monólito modular com fronteiras no lint (ADR-0002) | Microserviços                                 | Mostra o lint barrando um import indevido                        |
+| Um schema do PostgreSQL por módulo (ADR-0005)      | Tudo no `public` com prefixo                  | Fronteira visível no próprio banco (`\dn`)                       |
+| Worker em processo separado (ADR-0010)             | Consumers dentro da API                       | Ligado ao p95 medido no k6                                       |
+| Trace automático com OpenTelemetry (ADR-0013)      | Spans manuais                                 | 1 pedido = 34 spans em 2 processos, mostrado ao vivo no Jaeger   |
+| Idempotency-Key com trava por chave (ADR-0016)     | Chave no Redis com TTL / aceitar 409 enganoso | Teste achou bug real: 9 de 10 duplicatas recebiam `Out of Stock` |
 
 ## 4. Números medidos
 
@@ -80,6 +81,13 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 | 10/11 | gitleaks no histórico                                                                | **0 segredos** em 22 commits                                                                                                 |
 | 10/11 | Trace de **1 pedido** (`POST /orders` → `order-placed` → worker → `payment-results`) | **34 spans, 2 serviços, 1 único trace**; o mesmo `traceId` nos logs da API e do worker                                       |
 | 10/11 | p95 de `GET /catalog/products` no Prometheus (poucas requisições, sem carga)         | **4,9 ms**, contra a meta de 200 ms do SLO (`docs/slo.md`); número real virá do k6                                           |
+
+### Idempotência do pedido (10/11)
+
+| Cenário (PostgreSQL real)                                  | Antes da trava                        | Depois da trava                                                                   |
+| ---------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
+| 10 `POST /orders` simultâneos, mesma chave, estoque para 1 | 1 × `201`, **9 × `409 Out of Stock`** | 1 × `201`, 9 × `409 in progress` (+ `Retry-After`); nova tentativa = mesmo pedido |
+| Idem, estoque sobrando                                     | —                                     | 1 pedido, estoque reservado 1 vez, 1 evento                                       |
 
 ### k6 — antes e depois
 

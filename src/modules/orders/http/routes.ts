@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { HttpProblem } from '../../../shared/http/problem-details.js';
 import type { CancelOrder } from '../application/cancel-order.js';
 import {
+  IdempotencyKeyInProgressError,
+  IdempotencyKeyReusedError,
   OrderNotFoundError,
   OutOfStockError,
   UnknownProductsError,
@@ -33,6 +35,14 @@ const placeOrderBody = z.object({
     .max(50),
 });
 
+// Idempotency-Key (ADR-0016): optional; visible ASCII only, at most 255 characters.
+const idempotencyHeaders = z.object({
+  'idempotency-key': z
+    .string()
+    .regex(/^[!-~]{1,255}$/, 'must be 1-255 visible ASCII characters')
+    .optional(),
+});
+
 function toResponse(order: Order) {
   return {
     id: order.id,
@@ -54,14 +64,23 @@ function toResponse(order: Order) {
 export function ordersRoutes(useCases: OrdersUseCases): FastifyPluginAsync {
   return (app) => {
     // Translate this module's errors to HTTP; anything else goes to the global handler.
-    app.setErrorHandler((error) => {
+    app.setErrorHandler((error, _request, reply) => {
       if (error instanceof OrderNotFoundError) {
         throw new HttpProblem(404, 'Not Found', error.message);
+      }
+      if (error instanceof IdempotencyKeyInProgressError) {
+        // The first request with this key is still running; its answer will be replayed.
+        void reply.header('retry-after', '1');
+        throw new HttpProblem(409, 'Conflict', error.message);
       }
       if (error instanceof OutOfStockError || error instanceof InvalidOrderTransitionError) {
         throw new HttpProblem(409, 'Conflict', error.message);
       }
-      if (error instanceof UnknownProductsError || error instanceof InvalidOrderError) {
+      if (
+        error instanceof UnknownProductsError ||
+        error instanceof InvalidOrderError ||
+        error instanceof IdempotencyKeyReusedError
+      ) {
         throw new HttpProblem(422, 'Unprocessable Content', error.message);
       }
       throw error;
@@ -69,7 +88,15 @@ export function ordersRoutes(useCases: OrdersUseCases): FastifyPluginAsync {
 
     app.post('/', async (request, reply) => {
       const body = placeOrderBody.parse(request.body);
-      const order = await useCases.placeOrder.execute(body);
+      const headers = idempotencyHeaders.parse(request.headers);
+      const idempotencyKey = headers['idempotency-key'];
+      const { order, replayed } = await useCases.placeOrder.execute({
+        ...body,
+        ...(idempotencyKey === undefined ? {} : { idempotencyKey }),
+      });
+      // A replay answers like the first request (201 + same order, current status),
+      // flagged so the client can tell nothing new was created.
+      if (replayed) void reply.header('idempotent-replayed', 'true');
       return reply.status(201).header('location', `/orders/${order.id}`).send(toResponse(order));
     });
 

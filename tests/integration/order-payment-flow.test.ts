@@ -8,6 +8,7 @@ import {
   BullMqOrderEventPublisher,
   createOrdersModule,
   createPaymentResultsConsumer,
+  PostgresIdempotencyLock,
   PrismaOrderRepository,
   type OrderPlaced,
   type PaymentResult,
@@ -42,6 +43,7 @@ describe('order -> queue -> payment -> order (PostgreSQL + Redis)', () => {
     orderRepository: new PrismaOrderRepository(prisma),
     catalog: catalog.api,
     eventPublisher: new BullMqOrderEventPublisher(orderPlacedQueue),
+    idempotencyLock: new PostgresIdempotencyLock(prisma),
     newId: v7,
   });
   const payments = createPaymentsModule({

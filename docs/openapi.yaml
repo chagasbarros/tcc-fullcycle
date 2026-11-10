@@ -141,6 +141,14 @@ paths:
         Copia nome e preço atuais dos produtos (snapshot) e reserva o estoque de forma
         atômica e tudo-ou-nada (ADR-0009). O pedido nasce em `PENDING_PAYMENT` e o
         pagamento é processado de forma assíncrona. Produtos repetidos são somados.
+
+        **Idempotência (ADR-0016):** com o header `Idempotency-Key`, repetir a mesma
+        requisição devolve o pedido criado na primeira vez (`201` com
+        `Idempotent-Replayed: true`), sem reservar estoque nem criar outro pedido. A chave
+        vale por cliente. Enquanto a primeira requisição com a chave ainda está em
+        andamento, as outras recebem `409` com `Retry-After`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -149,11 +157,16 @@ paths:
               $ref: '#/components/schemas/PlaceOrder'
       responses:
         '201':
-          description: Pedido criado, aguardando pagamento
+          description: Pedido criado, aguardando pagamento (ou devolvido, se for uma repetição)
           headers:
             Location:
               description: URL do pedido criado
               schema: { type: string }
+            Idempotent-Replayed:
+              description: >-
+                Presente (`true`) quando o pedido já existia para esta Idempotency-Key: nada novo
+                foi criado. O corpo traz o pedido com o status atual.
+              schema: { type: string, enum: ['true'] }
           content:
             application/json:
               schema:
@@ -161,9 +174,23 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: >-
+            Sem estoque suficiente, ou outra requisição com a mesma Idempotency-Key ainda está em
+            andamento (neste caso com `Retry-After`; repetir depois devolve o pedido).
+          headers:
+            Retry-After:
+              description: Segundos para tentar de novo (só quando a chave está em uso)
+              schema: { type: integer }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '422':
-          $ref: '#/components/responses/UnprocessableContent'
+          description: >-
+            Produto inexistente, pedido inválido, ou Idempotency-Key já usada por este cliente para
+            um pedido diferente.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
 
   /orders/{id}:
     get:
@@ -209,6 +236,18 @@ paths:
 
 components:
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >-
+        Chave escolhida pelo cliente (ex.: um UUID gerado ao abrir o checkout) para que
+        retentativas não criem pedidos duplicados. De 1 a 255 caracteres ASCII visíveis.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+        pattern: '^[\x21-\x7E]+$'
     OrderId:
       name: id
       in: path

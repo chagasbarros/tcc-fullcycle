@@ -1,11 +1,23 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { CatalogApi, ProductSnapshot, StockItem } from '../../catalog/index.js';
-import { InvalidOrderError, InvalidOrderTransitionError, OrderStatus } from '../domain/order.js';
+import {
+  InvalidOrderError,
+  InvalidOrderTransitionError,
+  Order,
+  OrderStatus,
+} from '../domain/order.js';
+import { InMemoryIdempotencyLock } from '../infrastructure/in-memory-idempotency-lock.js';
 import { InMemoryOrderEventPublisher } from '../infrastructure/in-memory-order-event-publisher.js';
 import { InMemoryOrderRepository } from '../infrastructure/in-memory-order-repository.js';
 import { ApplyPaymentResult } from './apply-payment-result.js';
 import { CancelOrder } from './cancel-order.js';
-import { OrderNotFoundError, OutOfStockError, UnknownProductsError } from './errors.js';
+import {
+  IdempotencyKeyInProgressError,
+  IdempotencyKeyReusedError,
+  OrderNotFoundError,
+  OutOfStockError,
+  UnknownProductsError,
+} from './errors.js';
 import { GetOrder } from './get-order.js';
 import { PlaceOrder } from './place-order.js';
 
@@ -69,6 +81,7 @@ describe('orders use cases', () => {
       orders,
       catalog,
       events,
+      new InMemoryIdempotencyLock(),
       () => 'o-1',
       () => new Date('2026-11-08'),
     );
@@ -86,7 +99,9 @@ describe('orders use cases', () => {
 
   describe('PlaceOrder', () => {
     it('creates a pending order with a price snapshot, reserves stock and publishes OrderPlaced', async () => {
-      const order = await placeDefault();
+      const { order, replayed } = await placeDefault();
+
+      expect(replayed).toBe(false);
 
       expect(order.status).toBe(OrderStatus.PENDING_PAYMENT);
       expect(order.items).toEqual([
@@ -103,7 +118,7 @@ describe('orders use cases', () => {
     });
 
     it('merges repeated products into one item', async () => {
-      const order = await placeOrder.execute({
+      const { order } = await placeOrder.execute({
         customerId: CUSTOMER,
         paymentMethod: 'CARD',
         items: [
@@ -155,7 +170,13 @@ describe('orders use cases', () => {
     it('gives the stock back if saving the order fails', async () => {
       const failing = new InMemoryOrderRepository();
       failing.create = () => Promise.reject(new Error('database is down'));
-      const place = new PlaceOrder(failing, catalog, events, () => 'o-1');
+      const place = new PlaceOrder(
+        failing,
+        catalog,
+        events,
+        new InMemoryIdempotencyLock(),
+        () => 'o-1',
+      );
 
       await expect(
         place.execute({
@@ -166,6 +187,126 @@ describe('orders use cases', () => {
       ).rejects.toThrow('database is down');
       expect(await stockOf(keyboardId)).toBe(5);
       expect(events.published).toHaveLength(0);
+    });
+  });
+
+  describe('PlaceOrder with Idempotency-Key (ADR-0016)', () => {
+    const request = (overrides: Partial<Parameters<PlaceOrder['execute']>[0]> = {}) => ({
+      customerId: CUSTOMER,
+      paymentMethod: 'CARD' as const,
+      items: [{ productId: keyboardId, quantity: 2 }],
+      idempotencyKey: 'checkout-1',
+      ...overrides,
+    });
+
+    it('a retry with the same key returns the same order: stock reserved and event published once', async () => {
+      const first = await placeOrder.execute(request());
+      const retry = await placeOrder.execute(request());
+
+      expect(first.replayed).toBe(false);
+      expect(retry.replayed).toBe(true);
+      expect(retry.order.id).toBe(first.order.id);
+      expect(retry.order.idempotencyKey).toBe('checkout-1');
+      expect(await stockOf(keyboardId)).toBe(3); // 5 - 2, not 5 - 4
+      expect(events.published).toHaveLength(1);
+    });
+
+    it('the retry returns the order as it is now (e.g. already paid)', async () => {
+      const { order } = await placeOrder.execute(request());
+      order.markPaid();
+      await orders.updateStatus(order, OrderStatus.PENDING_PAYMENT);
+
+      const retry = await placeOrder.execute(request());
+
+      expect(retry.order.status).toBe(OrderStatus.PAID);
+    });
+
+    it.each([
+      ['other quantities', { items: [{ productId: keyboardId, quantity: 3 }] }],
+      ['other products', { items: [{ productId: mouseId, quantity: 1 }] }],
+      ['another payment method', { paymentMethod: 'PIX' as const }],
+    ])('the same key with %s is rejected and nothing changes', async (_case, overrides) => {
+      await placeOrder.execute(request());
+
+      await expect(placeOrder.execute(request(overrides))).rejects.toThrow(
+        IdempotencyKeyReusedError,
+      );
+      expect(await stockOf(keyboardId)).toBe(3);
+      expect(await stockOf(mouseId)).toBe(1);
+      expect(events.published).toHaveLength(1);
+    });
+
+    it('keys are scoped per customer: another customer with the same key gets a new order', async () => {
+      let id = 0;
+      const place = new PlaceOrder(
+        orders,
+        catalog,
+        events,
+        new InMemoryIdempotencyLock(),
+        () => `o-${++id}`,
+      );
+
+      const mine = await place.execute(request());
+      const theirs = await place.execute(request({ customerId: 'another-customer' }));
+
+      expect(theirs.replayed).toBe(false);
+      expect(theirs.order.id).not.toBe(mine.order.id);
+    });
+
+    it('losing a race to a concurrent request with the same key: gives stock back, returns the winner', async () => {
+      // The concurrent request saved its order between our lookup and our insert.
+      const winner = Order.place({
+        id: 'winner',
+        customerId: CUSTOMER,
+        paymentMethod: 'CARD',
+        items: [
+          { productId: keyboardId, productName: 'Keyboard', unitPriceInCents: 34_990, quantity: 2 },
+        ],
+        createdAt: new Date('2026-11-08'),
+        idempotencyKey: 'checkout-1',
+      });
+      await orders.create(winner);
+      const lookup = orders.findByIdempotencyKey.bind(orders);
+      let calls = 0;
+      orders.findByIdempotencyKey = (customerId, key) =>
+        ++calls === 1 ? Promise.resolve(null) : lookup(customerId, key);
+
+      const result = await placeOrder.execute(request());
+
+      expect(result).toMatchObject({ replayed: true, order: { id: 'winner' } });
+      expect(await stockOf(keyboardId)).toBe(5); // this attempt's reservation was undone
+      expect(events.published).toHaveLength(0);
+    });
+
+    it('while a request holds the key, a second one is refused at once without touching stock', async () => {
+      const busyLock = { runExclusive: () => Promise.resolve({ acquired: false as const }) };
+      const place = new PlaceOrder(orders, catalog, events, busyLock, () => 'o-1');
+
+      await expect(place.execute(request())).rejects.toThrow(IdempotencyKeyInProgressError);
+      expect(await stockOf(keyboardId)).toBe(5);
+      expect(events.published).toHaveLength(0);
+    });
+
+    it('without a key, the same request twice creates two orders (no idempotency)', async () => {
+      let id = 0;
+      const place = new PlaceOrder(
+        orders,
+        catalog,
+        events,
+        new InMemoryIdempotencyLock(),
+        () => `o-${++id}`,
+      );
+      const withoutKey = {
+        customerId: CUSTOMER,
+        paymentMethod: 'CARD' as const,
+        items: [{ productId: keyboardId, quantity: 2 }],
+      };
+
+      await place.execute(withoutKey);
+      await place.execute(withoutKey);
+
+      expect(await stockOf(keyboardId)).toBe(1);
+      expect(events.published).toHaveLength(2);
     });
   });
 

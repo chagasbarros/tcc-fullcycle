@@ -37,7 +37,11 @@ export interface OrderProps {
   paymentMethod: PaymentMethod;
   items: OrderItem[];
   createdAt: Date;
+  /** Sent by the client in the Idempotency-Key header (ADR-0016); unique per customer. */
+  idempotencyKey?: string;
 }
+
+const MAX_IDEMPOTENCY_KEY_LENGTH = 255;
 
 export class Order {
   private constructor(private readonly props: OrderProps) {}
@@ -53,6 +57,15 @@ export class Order {
       throw new InvalidOrderError('an order needs at least one item');
     }
     const productIds = new Set(props.items.map((item) => item.productId));
+    if (
+      props.idempotencyKey !== undefined &&
+      (props.idempotencyKey.length === 0 ||
+        props.idempotencyKey.length > MAX_IDEMPOTENCY_KEY_LENGTH)
+    ) {
+      throw new InvalidOrderError(
+        `idempotencyKey must have 1 to ${MAX_IDEMPOTENCY_KEY_LENGTH} characters`,
+      );
+    }
     if (productIds.size !== props.items.length) {
       throw new InvalidOrderError('each product can appear only once per order');
     }
@@ -81,6 +94,10 @@ export class Order {
 
   get paymentMethod(): PaymentMethod {
     return this.props.paymentMethod;
+  }
+
+  get idempotencyKey(): string | null {
+    return this.props.idempotencyKey ?? null;
   }
 
   get createdAt(): Date {

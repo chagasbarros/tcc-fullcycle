@@ -11,6 +11,7 @@ import type { OrderPlaced } from './modules/orders/index.js';
 import {
   BullMqOrderEventPublisher,
   createOrdersModule,
+  PostgresIdempotencyLock,
   PrismaOrderRepository,
 } from './modules/orders/index.js';
 import { createCacheRedisConnection } from './shared/cache/redis-cache.js';
@@ -49,6 +50,7 @@ const orders = createOrdersModule({
   orderRepository: new PrismaOrderRepository(prisma),
   catalog: catalog.api,
   eventPublisher: new BullMqOrderEventPublisher(orderPlacedQueue),
+  idempotencyLock: new PostgresIdempotencyLock(prisma),
   newId,
 });
 

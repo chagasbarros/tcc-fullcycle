@@ -13,6 +13,7 @@ import {
 import { Order } from '../../src/modules/orders/domain/order.js';
 import {
   createOrdersModule,
+  InMemoryIdempotencyLock,
   InMemoryOrderEventPublisher,
   InMemoryOrderRepository,
   type OrderRepository,
@@ -50,6 +51,7 @@ const productRepository: ProductRepository = {
 const orderRepository: OrderRepository = {
   create: (o) => orders.create(o),
   findById: (id) => orders.findById(id),
+  findByIdempotencyKey: (customerId, key) => orders.findByIdempotencyKey(customerId, key),
   updateStatus: (o, expected) => orders.updateStatus(o, expected),
 };
 
@@ -108,6 +110,7 @@ describe('marketplace-api honours the storefront contract (provider)', () => {
         orderRepository,
         catalog: catalog.api,
         eventPublisher: new InMemoryOrderEventPublisher(),
+        idempotencyLock: new InMemoryIdempotencyLock(),
         newId: v7,
       }),
     });

@@ -7,6 +7,7 @@ import {
 } from './application/apply-payment-result.js';
 import { CancelOrder } from './application/cancel-order.js';
 import { GetOrder } from './application/get-order.js';
+import type { IdempotencyLock } from './application/idempotency-lock.js';
 import type { OrderEventPublisher, OrderPlaced } from './application/order-event-publisher.js';
 import type { OrderRepository } from './application/order-repository.js';
 import { PlaceOrder } from './application/place-order.js';
@@ -17,8 +18,10 @@ import { ordersRoutes } from './http/routes.js';
  * (enforced by eslint-plugin-boundaries).
  */
 
-export type { OrderEventPublisher, OrderPlaced, OrderRepository, PaymentResult };
+export type { IdempotencyLock, OrderEventPublisher, OrderPlaced, OrderRepository, PaymentResult };
 export { BullMqOrderEventPublisher } from './infrastructure/bullmq-order-event-publisher.js';
+export { InMemoryIdempotencyLock } from './infrastructure/in-memory-idempotency-lock.js';
+export { PostgresIdempotencyLock } from './infrastructure/postgres-idempotency-lock.js';
 export { InMemoryOrderEventPublisher } from './infrastructure/in-memory-order-event-publisher.js';
 export { InMemoryOrderRepository } from './infrastructure/in-memory-order-repository.js';
 export { PrismaOrderRepository } from './infrastructure/prisma-order-repository.js';
@@ -35,6 +38,8 @@ export interface OrdersModuleDeps {
   /** orders talks to catalog only through its public API (ADR-0009). */
   catalog: CatalogApi;
   eventPublisher: OrderEventPublisher;
+  /** Serializes requests with the same Idempotency-Key (ADR-0016). */
+  idempotencyLock: IdempotencyLock;
   newId: () => string;
 }
 
@@ -42,13 +47,14 @@ export function createOrdersModule({
   orderRepository,
   catalog,
   eventPublisher,
+  idempotencyLock,
   newId,
 }: OrdersModuleDeps): OrdersModule {
   const applyPaymentResult = new ApplyPaymentResult(orderRepository, catalog);
 
   return {
     routes: ordersRoutes({
-      placeOrder: new PlaceOrder(orderRepository, catalog, eventPublisher, newId),
+      placeOrder: new PlaceOrder(orderRepository, catalog, eventPublisher, idempotencyLock, newId),
       getOrder: new GetOrder(orderRepository),
       cancelOrder: new CancelOrder(orderRepository, catalog),
     }),

@@ -12,13 +12,13 @@ import {
 describe('app', () => {
   let app: FastifyInstance;
 
-  beforeAll(async () => {
+  const build = (env: Parameters<typeof buildApp>[0]['env']) => {
     const catalog = createCatalogModule({
       productRepository: new InMemoryProductRepository(),
       newId: () => 'unused',
     });
-    app = await buildApp({
-      env: { NODE_ENV: 'test', LOG_LEVEL: 'info' },
+    return buildApp({
+      env,
       catalog,
       orders: createOrdersModule({
         orderRepository: new InMemoryOrderRepository(),
@@ -28,6 +28,10 @@ describe('app', () => {
         newId: () => 'unused',
       }),
     });
+  };
+
+  beforeAll(async () => {
+    app = await build({ NODE_ENV: 'test', LOG_LEVEL: 'info' });
   });
 
   afterAll(async () => {
@@ -38,7 +42,20 @@ describe('app', () => {
     const response = await app.inject({ method: 'GET', url: '/health' });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ status: 'ok' });
+    expect(response.json()).toEqual({ status: 'ok', version: null });
+  });
+
+  it('GET /health reports the deployed commit when Render sets it', async () => {
+    const deployed = await build({
+      NODE_ENV: 'test',
+      LOG_LEVEL: 'info',
+      RENDER_GIT_COMMIT: 'a39955b0c1d2e3f4',
+    });
+
+    const response = await deployed.inject({ method: 'GET', url: '/health' });
+    await deployed.close();
+
+    expect(response.json()).toEqual({ status: 'ok', version: 'a39955b0c1d2e3f4' });
   });
 
   it('serves the hand-written OpenAPI contract and the Swagger UI at /docs', async () => {

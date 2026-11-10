@@ -9,7 +9,7 @@ import { registerRequestIdHeader, requestIdOptions } from './shared/http/request
 import { registerRouteSpanName } from './shared/http/tracing.js';
 
 export interface AppDeps {
-  env: Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
+  env: Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'> & Partial<Pick<Env, 'RENDER_GIT_COMMIT'>>;
   catalog: CatalogModule;
   orders: OrdersModule;
 }
@@ -36,7 +36,9 @@ export async function buildApp({ env, catalog, orders }: AppDeps): Promise<Fasti
   registerMetrics(app);
   registerRouteSpanName(app);
 
-  app.get('/health', () => ({ status: 'ok' }));
+  // version: the deployed commit (Render), so the deploy pipeline can tell the new version is live.
+  const version = env.RENDER_GIT_COMMIT ?? null;
+  app.get('/health', () => ({ status: 'ok', version }));
   await registerApiDocs(app);
 
   await app.register(catalog.routes, { prefix: '/catalog' });

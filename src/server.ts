@@ -21,13 +21,14 @@ import { createFeatureFlags } from './shared/flags/create-feature-flags.js';
 import { Flag } from './shared/flags/feature-flags.js';
 import { newId } from './shared/ids.js';
 import { createQueue, createRedisConnection, QueueName } from './shared/queue/queues.js';
+import { startWorker } from './worker-runtime.js';
 
 const env = loadEnv();
 // For events outside a request (flags, cache). Request logs use Fastify's logger.
 const log = pino({ level: env.LOG_LEVEL, name: 'api' });
 const prisma = createPrismaClient(env.DATABASE_URL);
 const redis = createRedisConnection(env.REDIS_URL);
-// The API only publishes; the worker process consumes (ADR-0010).
+// The API publishes; the worker process consumes (ADR-0010), unless RUN_WORKER_IN_PROCESS.
 const orderPlacedQueue = createQueue<OrderPlaced>(QueueName.ORDER_PLACED, redis);
 
 // Separate, fail-fast connection for the cache (shared/cache/redis-cache.ts).
@@ -54,8 +55,15 @@ const orders = createOrdersModule({
   newId,
 });
 
+// Render free plan (ADR-0018): no background workers, so the consumers run here.
+const worker = env.RUN_WORKER_IN_PROCESS
+  ? startWorker({ env, prisma, redis, log: log.child({ name: 'worker' }) })
+  : undefined;
+
 const app = await buildApp({ env, catalog, orders });
 app.addHook('onClose', async () => {
+  // Stop taking jobs first; then close what the jobs and requests use.
+  await worker?.close();
   await orderPlacedQueue.close();
   flags.close();
   cacheRedis.disconnect();

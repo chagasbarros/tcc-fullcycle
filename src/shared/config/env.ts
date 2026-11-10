@@ -23,6 +23,11 @@ const envSchema = z.object({
   // Secret: comes from the environment only, never logged.
   UNLEASH_API_TOKEN: z.string().min(1).optional(),
   CATALOG_CACHE_ENABLED: z.stringbool().default(true),
+  // Render free plan has no background workers: run the queue consumers inside the API
+  // process (ADR-0018). Locally the worker is its own process (ADR-0010).
+  RUN_WORKER_IN_PROCESS: z.stringbool().default(false),
+  // Set by Render on every deploy; shown by /health so the pipeline can confirm the version.
+  RENDER_GIT_COMMIT: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

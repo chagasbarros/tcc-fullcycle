@@ -1,4 +1,6 @@
 import { buildApp } from './app.js';
+// Already loaded by `--import` (same module instance); imported here only for the shutdown.
+import { shutdownTracing } from './instrumentation.js';
 import { createCatalogModule, PrismaProductRepository } from './modules/catalog/index.js';
 import type { OrderPlaced } from './modules/orders/index.js';
 import {
@@ -40,13 +42,16 @@ app.addHook('onClose', async () => {
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     app.log.info({ signal }, 'shutting down');
-    app.close().then(
-      () => process.exit(0),
-      (error: unknown) => {
-        app.log.error(error, 'error during shutdown');
-        process.exit(1);
-      },
-    );
+    app
+      .close()
+      .then(() => shutdownTracing())
+      .then(
+        () => process.exit(0),
+        (error: unknown) => {
+          app.log.error(error, 'error during shutdown');
+          process.exit(1);
+        },
+      );
   });
 }
 

@@ -3,7 +3,10 @@ import type { CatalogModule } from './modules/catalog/index.js';
 import type { OrdersModule } from './modules/orders/index.js';
 import type { Env } from './shared/config/env.js';
 import { registerApiDocs } from './shared/http/api-docs.js';
+import { registerMetrics } from './shared/http/metrics.js';
 import { registerProblemDetails } from './shared/http/problem-details.js';
+import { registerRequestIdHeader, requestIdOptions } from './shared/http/request-id.js';
+import { registerRouteSpanName } from './shared/http/tracing.js';
 
 export interface AppDeps {
   env: Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
@@ -17,10 +20,21 @@ export interface AppDeps {
  */
 export async function buildApp({ env, catalog, orders }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: env.NODE_ENV === 'test' ? false : { level: env.LOG_LEVEL },
+    ...requestIdOptions,
+    logger:
+      env.NODE_ENV === 'test'
+        ? false
+        : {
+            level: env.LOG_LEVEL,
+            // Defense in depth: credentials never reach the logs (CLAUDE.md, section 2.6).
+            redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-api-key"]'],
+          },
   });
 
+  registerRequestIdHeader(app);
   registerProblemDetails(app);
+  registerMetrics(app);
+  registerRouteSpanName(app);
 
   app.get('/health', () => ({ status: 'ok' }));
   await registerApiDocs(app);

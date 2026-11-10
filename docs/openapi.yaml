@@ -17,6 +17,8 @@ servers:
 tags:
   - name: health
     description: Verificação de saúde
+  - name: observability
+    description: Métricas para o Prometheus
   - name: catalog
     description: Produtos, preço e estoque
   - name: orders
@@ -41,6 +43,22 @@ paths:
                   status:
                     type: string
                     const: ok
+
+  /metrics:
+    get:
+      tags: [observability]
+      operationId: getMetrics
+      summary: Métricas RED no formato do Prometheus
+      description: >-
+        Histograma http_request_duration_seconds por método, rota (template, não a URL)
+        e status, mais as métricas padrão do Node.js. Lido pelo Prometheus.
+      responses:
+        '200':
+          description: Métricas no formato de exposição de texto do Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
 
   /catalog/products:
     get:

@@ -23,16 +23,20 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 4. `POST /orders` com cartão no produto de **R$ 10,13** → `PAYMENT_FAILED` (o provider fake recusa valores terminados em 13 centavos, ADR-0011) e **o estoque volta**.
 5. Mesmo produto com `paymentMethod: PIX` → `PAID` (Strategy: o provider é escolhido em tempo de execução).
 6. `POST /orders/{id}/cancel` duas vezes → `200` e depois `409` (estado final, ADR-0007).
-7. _(a incluir)_ Swagger UI em `/docs`, trace no Jaeger e dashboard no Grafana.
+7. Swagger UI em `http://localhost:3000/docs`.
+8. **Jaeger** (`http://localhost:16686`, serviço `marketplace-api`): abrir o trace do `POST /orders` do passo 3 e mostrar a API e o worker num único trace, com os SQLs da reserva de estoque.
+9. **Grafana** (`http://localhost:3001`, abre direto no dashboard "Marketplace — RED"): rate, erros (os `409` do passo 6 aparecem como 4xx) e p95 por rota com a linha de 200 ms do SLO.
+10. Copiar o `traceId` de uma linha de log da API (`docker compose logs api`) e achar o mesmo `traceId` nos logs do worker.
 
 ## 3. Decisões candidatas para os 3 minutos
 
-| Decisão                                            | Alternativa descartada                | Por que é boa para apresentar                              |
-| -------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------- |
-| Reserva atômica de estoque (ADR-0009)              | Só validar o estoque (check-then-act) | Tem número medido: corrida de 50 pedidos contra estoque 10 |
-| Monólito modular com fronteiras no lint (ADR-0002) | Microserviços                         | Mostra o lint barrando um import indevido                  |
-| Um schema do PostgreSQL por módulo (ADR-0005)      | Tudo no `public` com prefixo          | Fronteira visível no próprio banco (`\dn`)                 |
-| Worker em processo separado (ADR-0010)             | Consumers dentro da API               | Ligado ao p95 medido no k6                                 |
+| Decisão                                            | Alternativa descartada                | Por que é boa para apresentar                                  |
+| -------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| Reserva atômica de estoque (ADR-0009)              | Só validar o estoque (check-then-act) | Tem número medido: corrida de 50 pedidos contra estoque 10     |
+| Monólito modular com fronteiras no lint (ADR-0002) | Microserviços                         | Mostra o lint barrando um import indevido                      |
+| Um schema do PostgreSQL por módulo (ADR-0005)      | Tudo no `public` com prefixo          | Fronteira visível no próprio banco (`\dn`)                     |
+| Worker em processo separado (ADR-0010)             | Consumers dentro da API               | Ligado ao p95 medido no k6                                     |
+| Trace automático com OpenTelemetry (ADR-0013)      | Spans manuais                         | 1 pedido = 34 spans em 2 processos, mostrado ao vivo no Jaeger |
 
 ## 4. Números medidos
 
@@ -67,6 +71,16 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 **Bug real encontrado pelo teste de contrato (09/11):** `POST /orders/{id}/cancel` respondia **415 Unsupported Media Type** quando o cliente mandava um corpo vazio em _chunked_ sem `Content-Type` (o verificador do Pact faz isso, e alguns clientes HTTP também). Unit tests com `inject` não pegavam, porque não reproduzem esse formato de requisição. Correção: a rota, que não usa corpo, passou a ignorá-lo; um teste de regressão falha sem a correção e passa com ela. Bom exemplo para a apresentação de **por que testar o contrato e não só a lógica**.
 
+### Observabilidade e CI
+
+| Data  | O quê                                                                                | Resultado                                                                                                                    |
+| ----- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| 10/11 | Primeira execução do CI (4 jobs em paralelo)                                         | **Verde na 1ª execução**, ~3 min no total (o job mais lento é o de segurança, 2m43s)                                         |
+| 10/11 | Trivy na imagem de runtime                                                           | **10 CVEs HIGH**, todas no npm embutido na `node:22-alpine`; corrigido removendo o npm da imagem final → **0 HIGH/CRITICAL** |
+| 10/11 | gitleaks no histórico                                                                | **0 segredos** em 22 commits                                                                                                 |
+| 10/11 | Trace de **1 pedido** (`POST /orders` → `order-placed` → worker → `payment-results`) | **34 spans, 2 serviços, 1 único trace**; o mesmo `traceId` nos logs da API e do worker                                       |
+| 10/11 | p95 de `GET /catalog/products` no Prometheus (poucas requisições, sem carga)         | **4,9 ms**, contra a meta de 200 ms do SLO (`docs/slo.md`); número real virá do k6                                           |
+
 ### k6 — antes e depois
 
 _(a preencher no dia 12/11: p95, RPS e taxa de erro do baseline e da versão otimizada, gargalo identificado e evidência via `EXPLAIN ANALYZE` / clinic.js)_
@@ -87,3 +101,5 @@ _(preencher ao fim do projeto)_ Candidatos já identificados:
 ## 6. Prints
 
 _(a incluir: Grafana com métricas RED, trace ponta a ponta no Jaeger, Swagger UI, CI verde)_
+
+**Lição de operação (10/11):** o disco C: chegou a 0 GB livres, e o Docker Desktop travou e corrompeu os dados dele (erros de _read-only file system_). Limpar o cache do npm (~8 GB) resolveu. Vale verificar o espaço em disco antes da apresentação.

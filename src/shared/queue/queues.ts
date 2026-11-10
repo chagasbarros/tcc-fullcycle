@@ -1,4 +1,5 @@
 import { Queue, Worker, type JobsOptions, type Processor } from 'bullmq';
+import { BullMQOtel } from 'bullmq-otel';
 import { Redis } from 'ioredis';
 
 /** Queue names: the asynchronous contract between modules (CLAUDE.md, section 4). */
@@ -21,13 +22,20 @@ const defaultJobOptions: JobsOptions = {
   removeOnFail: { age: 7 * 24 * 60 * 60 },
 };
 
+/**
+ * Trace propagation across the queue: the producer writes the current trace context into
+ * the job, and the worker continues the same trace (POST /orders -> worker in one trace).
+ * Without the OTel SDK started (tests, no Jaeger), this is a no-op.
+ */
+const telemetry = new BullMQOtel({ tracerName: 'bullmq' });
+
 export function createRedisConnection(url: string): Redis {
   // BullMQ requires maxRetriesPerRequest: null (blocking commands must not time out).
   return new Redis(url, { maxRetriesPerRequest: null });
 }
 
 export function createQueue<T>(name: QueueName, connection: Redis): Queue<T> {
-  return new Queue<T>(name, { connection, defaultJobOptions });
+  return new Queue<T>(name, { connection, defaultJobOptions, telemetry });
 }
 
 export function createWorker<T>(
@@ -36,5 +44,5 @@ export function createWorker<T>(
   connection: Redis,
   concurrency = 10,
 ): Worker<T> {
-  return new Worker<T>(name, processor, { connection, concurrency });
+  return new Worker<T>(name, processor, { connection, concurrency, telemetry });
 }

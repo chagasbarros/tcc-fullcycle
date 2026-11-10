@@ -157,7 +157,7 @@ npm run k6:after              # k6 depois da otimização
 ### Arquitetura e desempenho
 
 - [ ] ADRs (MADR) em `docs/adr/`, **cada um com a alternativa descartada**
-- [ ] C4 de **contexto** (`docs/c4/contexto.md`) e de **contêiner** (`docs/c4/conteiner.md`) em Mermaid
+- [x] C4 de **contexto** (`docs/c4/contexto.md`) e de **contêiner** (`docs/c4/conteiner.md`) em Mermaid
 - [ ] OpenAPI 3.1 de **catálogo** e **pedido** em `docs/openapi.yaml` (arquivo único), com lint no pipeline e Swagger UI em `/docs`
 - [ ] Plano de p95 em `docs/desempenho.md`:
   - **Cache com tolerância:** cache-aside no Redis para leitura de catálogo, TTL declarado (ex.: 60 s de dados possivelmente desatualizados aceitos) e invalidação na escrita

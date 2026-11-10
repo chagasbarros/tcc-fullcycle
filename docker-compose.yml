@@ -1,7 +1,7 @@
 # Local environment: `docker compose up -d` starts everything.
 # Credentials below are for local development only (never used in staging/production).
 # Observability: Grafana http://localhost:3001 · Prometheus http://localhost:9090 · Jaeger http://localhost:16686
-# More services (unleash) join as they are implemented.
+# Feature flags: Unleash http://localhost:4242 (admin / unleash4all, local only)
 
 services:
   postgres:
@@ -54,6 +54,9 @@ services:
       REDIS_URL: redis://redis:6379
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: marketplace-api
+      # Feature flags from the local Unleash (ADR-0015). Local-only token, see the unleash service.
+      UNLEASH_URL: http://unleash:4242/api
+      UNLEASH_API_TOKEN: default:development.local-dev-client-token
     ports:
       - '3000:3000'
     depends_on:
@@ -91,6 +94,55 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+
+  # Unleash's own database: flag data stays apart from business data (seed, TRUNCATEs).
+  # No volume: flags are recreated by unleash-setup on every `up`.
+  unleash-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: unleash
+      POSTGRES_PASSWORD: unleash
+      POSTGRES_DB: unleash
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U unleash -d unleash']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Feature flags (ADR-0015).
+  # The tokens below are fixed, LOCAL-ONLY values (like the database password above);
+  # on Render there is no Unleash: the flag comes from an env var.
+  unleash:
+    image: unleashorg/unleash-server:7.1.0
+    environment:
+      DATABASE_URL: postgres://unleash:unleash@unleash-db:5432/unleash
+      DATABASE_SSL: 'false'
+      INIT_CLIENT_API_TOKENS: default:development.local-dev-client-token
+      INIT_ADMIN_API_TOKENS: '*:*.local-dev-admin-token'
+    ports:
+      - '4242:4242'
+    depends_on:
+      unleash-db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:4242/health || exit 1']
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # One-shot: creates the catalog-cache-enabled flag (ON) if it does not exist yet.
+  unleash-setup:
+    image: curlimages/curl:8.15.0
+    entrypoint: ['sh', '/setup.sh']
+    environment:
+      UNLEASH_ADMIN_URL: http://unleash:4242
+      UNLEASH_ADMIN_TOKEN: '*:*.local-dev-admin-token'
+    volumes:
+      - ./ops/unleash/setup.sh:/setup.sh:ro
+    depends_on:
+      unleash:
+        condition: service_healthy
 
   # Traces: the API and the worker send spans over OTLP/HTTP (src/instrumentation.ts).
   # In-memory storage: traces are lost on restart (fine for local use and the demo).

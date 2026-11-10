@@ -14,6 +14,7 @@ describe('loadEnv', () => {
       PORT: 3000,
       LOG_LEVEL: 'info',
       PAYMENT_PROVIDER_LATENCY_MS: 0,
+      CATALOG_CACHE_ENABLED: true,
       ...required,
     });
   });
@@ -32,5 +33,26 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ ...required, DATABASE_URL: 'mysql://localhost/db' })).toThrow(
       /DATABASE_URL/,
     );
+  });
+
+  it.each([
+    ['false', false],
+    ['0', false],
+    ['true', true],
+    ['1', true],
+  ])('reads CATALOG_CACHE_ENABLED=%s as %s', (value, expected) => {
+    expect(loadEnv({ ...required, CATALOG_CACHE_ENABLED: value }).CATALOG_CACHE_ENABLED).toBe(
+      expected,
+    );
+  });
+
+  it('requires UNLEASH_API_TOKEN when UNLEASH_URL is set', () => {
+    expect(() => loadEnv({ ...required, UNLEASH_URL: 'http://unleash:4242/api' })).toThrow(
+      /UNLEASH_API_TOKEN/,
+    );
+    expect(
+      loadEnv({ ...required, UNLEASH_URL: 'http://unleash:4242/api', UNLEASH_API_TOKEN: 't' })
+        .UNLEASH_URL,
+    ).toBe('http://unleash:4242/api');
   });
 });

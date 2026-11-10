@@ -14,6 +14,11 @@ import { catalogRoutes } from './http/routes.js';
  */
 
 export type { ProductRepository, StockItem };
+export {
+  CachedProductRepository,
+  CATALOG_CACHE_TTL_SECONDS,
+  type CachedProductRepositoryOptions,
+} from './infrastructure/cached-product-repository.js';
 export { InMemoryProductRepository } from './infrastructure/in-memory-product-repository.js';
 export { PrismaProductRepository } from './infrastructure/prisma-product-repository.js';
 

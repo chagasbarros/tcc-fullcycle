@@ -8,7 +8,7 @@
 
 O projeto precisa de **uma feature flag** com Unleash: `catalog-cache-enabled`, que liga e desliga o cache do catálogo (ADR-0014). Ela serve como **kill switch** e permite o antes e depois do k6 (`CLAUDE.md`, seção 7).
 
-O Unleash é um servidor com banco de dados próprio. No compose local isso é fácil. No Render, com plano gratuito (ADR-0017), seriam mais um serviço web e mais um PostgreSQL por ambiente. O PostgreSQL gratuito do Render expira em 30 dias.
+O Unleash é um servidor com banco de dados próprio. No compose local isso é fácil. No Render, com plano gratuito (ADR-0018), seriam mais um serviço web e mais um PostgreSQL por ambiente. O PostgreSQL gratuito do Render expira em 30 dias.
 
 ## Fatores de decisão
 

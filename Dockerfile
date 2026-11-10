@@ -24,6 +24,10 @@ RUN npm ci --omit=dev \
 COPY --from=build /app/dist ./dist
 # The API contract served by the Swagger UI at /docs.
 COPY docs/openapi.yaml ./docs/openapi.yaml
+# Schema + migrations + start script: on Render, migrations run at container start (ADR-0018).
+COPY prisma.config.ts ./
+COPY prisma ./prisma
+COPY ops/render/start.sh ./start-with-migrations.sh
 USER node
 EXPOSE 3000
 # --import loads OpenTelemetry before the app (it only turns on if OTEL_EXPORTER_OTLP_ENDPOINT is set).

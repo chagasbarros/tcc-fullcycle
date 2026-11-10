@@ -15,6 +15,7 @@ describe('loadEnv', () => {
       LOG_LEVEL: 'info',
       PAYMENT_PROVIDER_LATENCY_MS: 0,
       CATALOG_CACHE_ENABLED: true,
+      RUN_WORKER_IN_PROCESS: false,
       ...required,
     });
   });

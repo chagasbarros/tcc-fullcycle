@@ -30,7 +30,9 @@ paths:
       tags: [health]
       operationId: getHealth
       summary: Verifica se a API está no ar
-      description: Usado pelo healthcheck do Docker Compose e do Render.
+      description: >-
+        Usado pelo healthcheck do Docker Compose e do Render. `version` é o commit publicado
+        (no Render); o pipeline de deploy espera essa versão aparecer (ADR-0018).
       responses:
         '200':
           description: API saudável
@@ -38,11 +40,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status]
+                required: [status, version]
                 properties:
                   status:
                     type: string
                     const: ok
+                  version:
+                    type: [string, 'null']
+                    description: Commit em execução; null fora do Render
+                    examples: [a39955b]
 
   /metrics:
     get:

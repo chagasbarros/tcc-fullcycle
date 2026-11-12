@@ -47,7 +47,7 @@ npm run k6:after           # flag LIGADA (com a correção do gargalo já no có
 node k6/run.mjs <nome> --cache on|off   # qualquer combinação; VUS=... para mudar a carga
 ```
 
-O k6 roda em Docker (`grafana/k6:1.0.0`) dentro da rede do compose (`k6/run.mjs`). O resumo de cada rodada fica em `k6/results/<nome>.json`.
+O k6 roda em Docker (`grafana/k6:1.0.0`) dentro da rede do compose (`k6/run.mjs`). As escolhas de como rodar, contra qual ambiente e com qual cenário, e as alternativas descartadas, estão no ADR-0020. O resumo de cada rodada fica em `k6/results/<nome>.json`.
 
 ### Cenário (`k6/marketplace.js`)
 

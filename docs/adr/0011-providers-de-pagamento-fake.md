@@ -6,7 +6,7 @@
 
 ## Contexto e problema
 
-O módulo `payments` cobra os pedidos por meio de _providers_ (gateways). O projeto não integra com gateways reais, então usa providers **fake**: `FakeCardProvider` (cartão) e `FakePixProvider` (Pix). Eles ficam atrás da interface `PaymentProvider` e são escolhidos em tempo de execução pelo meio de pagamento. É o padrão Strategy, que está **provisório** até a revisão do módulo 4 (ADR-0003, `CLAUDE.md`, seção 12).
+O módulo `payments` cobra os pedidos por meio de _providers_ (gateways). O projeto não integra com gateways reais, então usa providers **fake**: `FakeCardProvider` (cartão) e `FakePixProvider` (Pix). Eles ficam atrás da interface `PaymentProvider` e são escolhidos em tempo de execução pelo meio de pagamento. É o padrão Strategy, confirmado depois da revisão do módulo 4 (ADR-0003).
 
 Duas perguntas precisam de resposta:
 

@@ -9,7 +9,7 @@ export interface ChargeRequest {
 export type ChargeResult = { approved: true } | { approved: false; reason: string };
 
 /**
- * Strategy (provisional until ADR-0003): one implementation per payment method,
+ * Strategy (ADR-0003): one implementation per payment method,
  * chosen at runtime by ProcessPayment. A new method is a new class; the use case
  * does not change (open/closed principle).
  */

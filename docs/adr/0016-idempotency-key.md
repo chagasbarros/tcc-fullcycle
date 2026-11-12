@@ -56,7 +56,7 @@ Duas perguntas:
   - Sem dependência nova: só o PostgreSQL, que já é a fonte da verdade do pedido.
 - **Negativas:**
   - **A chave não expira.** Ela fica para sempre no pedido. Isso é aceitável (são até 255 bytes por pedido), mas difere do TTL de 24 h comum em APIs de pagamento.
-  - **Uma conexão a mais** do _pool_ é usada durante cada requisição com chave, para segurar a trava.
+  - **Uma conexão a mais** do _pool_ é usada durante cada requisição com chave, para segurar a trava. **Atualização (12/11):** o k6 mostrou que, com um pool compartilhado, isso vira impasse sob carga. A trava passou a ter um pool próprio (ADR-0019).
   - **Colisão de hash:** o hash de 64 bits pode, em teoria, colidir e gerar um `409 in progress` indevido. A probabilidade é desprezível e o `Retry-After` resolve.
   - O índice antigo `(customer_id)` ficou redundante com o novo `UNIQUE(customer_id, idempotency_key)`, que começa pela mesma coluna. Ele pode ser removido; o caso será avaliado no k6.
 

@@ -163,7 +163,7 @@ npm run k6:after              # k6 depois da otimização
 - [ ] Plano de p95 em `docs/desempenho.md`:
   - **Cache com tolerância:** cache-aside no Redis para leitura de catálogo, TTL declarado (ex.: 60 s de dados possivelmente desatualizados aceitos) e invalidação na escrita
   - **Idempotência da fila:** header `Idempotency-Key` no `POST /orders`; `jobId = orderId` no BullMQ; consumer verifica o estado do pagamento antes de processar (reentrega não cobra duas vezes)
-- [ ] k6 em **3 estágios** (`stages`: rampa de subida → sustentação → rampa de descida) em `k6/`; relatório em `docs/desempenho.md` com **gargalo identificado, antes e depois** (números de p95, RPS, erro), evidência via `EXPLAIN ANALYZE` e/ou clinic.js
+- [x] k6 em **3 estágios** (`stages`: rampa de subida → sustentação → rampa de descida) em `k6/`; relatório em `docs/desempenho.md` com **gargalo identificado, antes e depois** (números de p95, RPS, erro), evidência via `EXPLAIN ANALYZE` e/ou clinic.js
 
 ### Documentos obrigatórios
 

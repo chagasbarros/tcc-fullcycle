@@ -101,19 +101,23 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 - **Primeira execução do workflow de deploy (12/11):** staging e produção verdes em **50 s**, com o _smoke test_ (`GET /catalog/products` → 200) passando nos dois. Os dois já estavam no commit publicado, então a espera pela versão nova só fica comprovada no próximo merge.
 - **Tropeço real:** a primeira tentativa falhou com `curl: (3) URL rejected: Malformed input`. O _deploy hook_ colado no `gh secret set` (PowerShell) ficou com um caractere invisível. A falha aconteceu **antes** de chamar o Render, então nenhum ambiente foi afetado. A solução foi colar de novo o valor pela interface do GitHub.
 
-### k6 — antes e depois
+### k6 — antes e depois (12/11)
 
-_(a preencher no dia 12/11: p95, RPS e taxa de erro do baseline e da versão otimizada, gargalo identificado e evidência via `EXPLAIN ANALYZE` / clinic.js)_
+300 VUs, 3 estágios (1 min subida, 3 min sustentação, 1 min descida), mix 80/15/5. Detalhes em `docs/desempenho.md`.
 
-| Cenário              | p95 | RPS | Erro | Evidência |
-| -------------------- | --- | --- | ---- | --------- |
-| Baseline             | —   | —   | —    | —         |
-| Depois da otimização | —   | —   | —    | —         |
+| Cenário                      | p95 `GET /catalog/products` | p95 `POST /orders` | Erro `POST /orders` | RPS | Evidência                                 |
+| ---------------------------- | --------------------------- | ------------------ | ------------------- | --- | ----------------------------------------- |
+| Baseline (cache off)         | **3.867 ms**                | 8.133 ms           | **36,9%**           | 168 | `pg_stat_activity`: 10/10 conexões presas |
+| Pool separado (cache off)    | **97 ms**                   | 1.506 ms           | 0%                  | 603 | conexões livres nos dois pools            |
+| Pool separado + cache ligado | **8,3 ms**                  | 64 ms              | 0%                  | 787 | API perto do teto teórico do cenário      |
+
+**História para a apresentação:** o gargalo **não era consulta lenta**, e por isso o `EXPLAIN ANALYZE` não ajudava. Era um impasse no pool de conexões, causado por uma decisão anterior (a trava de idempotência do ADR-0016, que o próprio ADR já listava como custo). A evidência veio do `pg_stat_activity`, com 10 de 10 conexões em `idle in transaction`. A correção foi pequena, um pool separado (ADR-0019), e a alternativa descartada foi "só aumentar o pool", que adiaria o impasse em vez de eliminá-lo. O teste de integração reproduz o bug com 2 conexões.
 
 ## 5. O que faria diferente
 
 _(preencher ao fim do projeto)_ Candidatos já identificados:
 
+- **Trava de idempotência por linha:** o pool separado (ADR-0019) eliminou o impasse, mas os pedidos com chave ainda fazem fila no pool de travas (p95 de 1,5 s com o cache desligado). Uma trava por `INSERT` não seguraria conexão nenhuma.
 - **Transactional Outbox:** hoje salvar o pedido e publicar `OrderPlaced` não são atômicos; se a publicação falhar, o pedido fica em `PENDING_PAYMENT` (ADR-0009).
 - **Expiração de reservas:** se o worker nunca responder, o estoque fica reservado indefinidamente.
 - **Autenticação:** o `customerId` vem no corpo da requisição (ADR-0008).

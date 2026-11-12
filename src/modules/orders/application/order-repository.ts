@@ -1,6 +1,6 @@
 import type { Order, OrderStatus } from '../domain/order.js';
 
-/** Port (Repository pattern, provisional until ADR-0004). */
+/** Port (Repository pattern, ADR-0004). */
 export interface OrderRepository {
   /**
    * Saves a new order. Returns false, without saving, when the customer already has an

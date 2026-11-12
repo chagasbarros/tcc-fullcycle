@@ -11,7 +11,7 @@ export interface ProductPage {
 }
 
 /**
- * Port (Repository pattern, provisional until ADR-0004): the use cases depend on
+ * Port (Repository pattern, ADR-0004): the use cases depend on
  * this interface; Prisma and in-memory implementations live in infrastructure/.
  */
 export interface ProductRepository {

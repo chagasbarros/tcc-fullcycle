@@ -2,7 +2,8 @@
 //   node k6/run.mjs <label> [--cache on|off]
 // --cache switches the catalog-cache-enabled flag in the local Unleash first, then waits
 // for the API to pick it up (it polls Unleash every ~5 s, ADR-0015).
-// Extra settings go through env vars: VUS, RAMP_UP, SUSTAIN, RAMP_DOWN.
+// Extra settings go through env vars: VUS, RAMP_UP, SUSTAIN, RAMP_DOWN, and for a remote
+// environment BASE_URL (default: the compose api) and PREPARE_PRODUCTS (see marketplace.js).
 import { spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -35,8 +36,8 @@ if (cache) {
 const k6Dir = dirname(fileURLToPath(import.meta.url));
 mkdirSync(resolve(k6Dir, 'results'), { recursive: true });
 
-const env = ['VUS', 'RAMP_UP', 'SUSTAIN', 'RAMP_DOWN'].flatMap((name) =>
-  process.env[name] ? ['-e', `${name}=${process.env[name]}`] : [],
+const env = ['BASE_URL', 'PREPARE_PRODUCTS', 'VUS', 'RAMP_UP', 'SUSTAIN', 'RAMP_DOWN'].flatMap(
+  (name) => (process.env[name] ? ['-e', `${name}=${process.env[name]}`] : []),
 );
 const result = spawnSync(
   'docker',

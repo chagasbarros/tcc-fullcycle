@@ -94,6 +94,35 @@ O pool inteiro (10 conexões, o padrão do driver `pg`) ficou parado em `idle in
 
 **Regressão:** `tests/integration/idempotency-key.test.ts` reproduz o impasse em escala pequena (pool de 2 conexões, 6 pedidos simultâneos): com um pool compartilhado aparecem `500`, e com pools separados os 6 pedidos são criados.
 
+### Complemento: k6 no Render staging (ADR-0022)
+
+O módulo 4 recomenda rodar o k6 num ambiente representativo de produção, não na máquina do autor. O antes e o depois ficaram no local (ADR-0020). Esta rodada no staging do Render complementa as medições, com carga leve para não afetar a produção, que divide o banco com o staging.
+
+```bash
+S=https://marketplace-api-staging-7327.onrender.com
+curl -s $S/metrics > k6/results/render-metrics-before.txt
+BASE_URL=$S PREPARE_PRODUCTS=500 VUS=30 RAMP_UP=30s SUSTAIN=2m RAMP_DOWN=30s node k6/run.mjs render-staging
+curl -s $S/metrics > k6/results/render-metrics-after.txt
+```
+
+**Condições:** 30 VUs, 3 estágios curtos, mesmo mix 80/15/5, 500 produtos criados pelo `setup()`, cache **ligado** (`CATALOG_CACHE_ENABLED` no env group), plano gratuito do Render na Virgínia, k6 rodando no Brasil.
+
+| Rota                          | k6 (inclui a rede) p95 | **Dentro da API** p50 | **Dentro da API** p95 | Em até 200 ms (API) |
+| ----------------------------- | ---------------------- | --------------------- | --------------------- | ------------------- |
+| `GET /catalog/products` (SLO) | 306 ms                 | 2,6 ms                | **5,0 ms**            | **99,77%** ✅       |
+| `GET /catalog/products/{id}`  | 371 ms                 | 3,0 ms                | 75,5 ms               | 98,65%              |
+| `POST /orders`                | 822 ms                 | 34,7 ms               | 496 ms                | 81,4%               |
+
+Total: 44,9 req/s, **0% de erro**.
+
+**Como ler:**
+
+- **O SLO é cumprido no ambiente hospedado.** O `docs/slo.md` mede a latência dentro da API: 99,77% das leituras do catálogo ficaram em até 200 ms (meta: 95%).
+- **O threshold do k6 falhou por causa da rede, não da API.** A mediana vista pelo k6 (192 ms) é quase toda a ida e volta Brasil–Virgínia. Medir o SLO por fora mistura a rede com a aplicação. Por isso o SLO foi definido dentro da API.
+- **O `POST /orders` sente a CPU do plano gratuito:** p95 de 496 ms no Render, contra 64 ms no local com cache. Com uma fração de CPU, a reserva de estoque, a trava e a gravação do pedido competem com as leituras.
+- **Os percentis "dentro da API"** vêm da diferença entre o histograma `http_request_duration_seconds` antes e depois da rodada, com interpolação linear dentro do bucket (o mesmo cálculo do `histogram_quantile` do Prometheus). Os arquivos estão em `k6/results/render-metrics-*.txt`.
+- **Não é comparável 1:1 com o local:** carga 10 vezes menor, catálogo menor e CPU muito menor (ADR-0022).
+
 ### Próximo gargalo (não corrigido)
 
 Com o cache desligado, o `POST /orders` ainda tem p95 de 1,5 s. Agora é **fila** no pool de travas, não impasse: erro zero. Com o cache ligado, as leituras deixam de ocupar conexões de trabalho e o p95 cai para 64 ms. A correção de raiz seria a trava por linha (ADR-0019, alternativas descartadas), que não segura conexão nenhuma.

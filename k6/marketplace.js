@@ -34,10 +34,38 @@ export const options = {
     http_req_failed: ['rate<0.01'],
   },
   summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
+  // Creating products on a remote environment (PREPARE_PRODUCTS) can take a while.
+  setupTimeout: '3m',
 };
+
+// For an empty environment (e.g. staging on Render, which has no seed): creates products
+// through the API until the catalog has PREPARE_PRODUCTS of them. Off by default.
+function prepareProducts(target) {
+  const total = http.get(`${BASE_URL}/catalog/products?pageSize=1`).json().total;
+  const missing = target - total;
+  for (let created = 0; created < missing; created += 20) {
+    const batch = [];
+    for (let i = created; i < Math.min(created + 20, missing); i++) {
+      batch.push([
+        'POST',
+        `${BASE_URL}/catalog/products`,
+        JSON.stringify({
+          name: `k6 product ${total + i + 1}`,
+          priceInCents: 1000 + i,
+          stock: 100000,
+        }),
+        { headers: { 'Content-Type': 'application/json' }, tags: { name: 'setup' } },
+      ]);
+    }
+    http.batch(batch);
+  }
+  if (missing > 0) console.log(`created ${missing} products (catalog had ${total})`);
+}
 
 // Runs once: reads how many pages exist and collects product ids with enough stock for orders.
 export function setup() {
+  const prepare = Number(__ENV.PREPARE_PRODUCTS || 0);
+  if (prepare > 0) prepareProducts(prepare);
   const first = http.get(`${BASE_URL}/catalog/products?page=1&pageSize=100`).json();
   const pages = Math.ceil(first.total / PAGE_SIZE);
   const productIds = [];

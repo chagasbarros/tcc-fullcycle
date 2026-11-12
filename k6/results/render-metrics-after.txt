@@ -1,0 +1,263 @@
+# HELP process_cpu_user_seconds_total Total user CPU time spent in seconds.
+# TYPE process_cpu_user_seconds_total counter
+process_cpu_user_seconds_total 15.090377
+
+# HELP process_cpu_system_seconds_total Total system CPU time spent in seconds.
+# TYPE process_cpu_system_seconds_total counter
+process_cpu_system_seconds_total 4.5661380000000005
+
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 19.656515
+
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1794523508
+
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 149045248
+
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 11575988224
+
+# HELP process_heap_bytes Process heap size in bytes.
+# TYPE process_heap_bytes gauge
+process_heap_bytes 177176576
+
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 31
+
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 1048576
+
+# HELP nodejs_eventloop_lag_seconds Lag of event loop in seconds.
+# TYPE nodejs_eventloop_lag_seconds gauge
+nodejs_eventloop_lag_seconds 0.00516932
+
+# HELP nodejs_eventloop_lag_min_seconds The minimum recorded event loop delay.
+# TYPE nodejs_eventloop_lag_min_seconds gauge
+nodejs_eventloop_lag_min_seconds 0.008593408
+
+# HELP nodejs_eventloop_lag_max_seconds The maximum recorded event loop delay.
+# TYPE nodejs_eventloop_lag_max_seconds gauge
+nodejs_eventloop_lag_max_seconds 1.509949439
+
+# HELP nodejs_eventloop_lag_mean_seconds The mean of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_mean_seconds gauge
+nodejs_eventloop_lag_mean_seconds 0.012801843656916213
+
+# HELP nodejs_eventloop_lag_stddev_seconds The standard deviation of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_stddev_seconds gauge
+nodejs_eventloop_lag_stddev_seconds 0.01923927511676643
+
+# HELP nodejs_eventloop_lag_p50_seconds The 50th percentile of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_p50_seconds gauge
+nodejs_eventloop_lag_p50_seconds 0.010092543
+
+# HELP nodejs_eventloop_lag_p90_seconds The 90th percentile of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_p90_seconds gauge
+nodejs_eventloop_lag_p90_seconds 0.010616831
+
+# HELP nodejs_eventloop_lag_p99_seconds The 99th percentile of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_p99_seconds gauge
+nodejs_eventloop_lag_p99_seconds 0.092405759
+
+# HELP nodejs_active_resources Number of active resources that are currently keeping the event loop alive, grouped by async resource type.
+# TYPE nodejs_active_resources gauge
+nodejs_active_resources{type="FSReqCallback"} 1
+nodejs_active_resources{type="PipeWrap"} 2
+nodejs_active_resources{type="TCPSocketWrap"} 9
+nodejs_active_resources{type="TCPServerWrap"} 1
+nodejs_active_resources{type="Timeout"} 9
+nodejs_active_resources{type="Immediate"} 1
+
+# HELP nodejs_active_resources_total Total number of active resources.
+# TYPE nodejs_active_resources_total gauge
+nodejs_active_resources_total 23
+
+# HELP nodejs_active_handles Number of active libuv handles grouped by handle type. Every handle type is C++ class name.
+# TYPE nodejs_active_handles gauge
+nodejs_active_handles{type="Socket"} 11
+nodejs_active_handles{type="Server"} 1
+
+# HELP nodejs_active_handles_total Total number of active handles.
+# TYPE nodejs_active_handles_total gauge
+nodejs_active_handles_total 12
+
+# HELP nodejs_active_requests Number of active libuv requests grouped by request type. Every request type is C++ class name.
+# TYPE nodejs_active_requests gauge
+nodejs_active_requests{type="FSReqCallback"} 1
+
+# HELP nodejs_active_requests_total Total number of active requests.
+# TYPE nodejs_active_requests_total gauge
+nodejs_active_requests_total 1
+
+# HELP nodejs_heap_size_total_bytes Process heap size from Node.js in bytes.
+# TYPE nodejs_heap_size_total_bytes gauge
+nodejs_heap_size_total_bytes 72814592
+
+# HELP nodejs_heap_size_used_bytes Process heap size used from Node.js in bytes.
+# TYPE nodejs_heap_size_used_bytes gauge
+nodejs_heap_size_used_bytes 53526272
+
+# HELP nodejs_external_memory_bytes Node.js external memory size in bytes.
+# TYPE nodejs_external_memory_bytes gauge
+nodejs_external_memory_bytes 4603125
+
+# HELP nodejs_heap_space_size_total_bytes Process heap space size total from Node.js in bytes.
+# TYPE nodejs_heap_space_size_total_bytes gauge
+nodejs_heap_space_size_total_bytes{space="read_only"} 0
+nodejs_heap_space_size_total_bytes{space="new"} 2097152
+nodejs_heap_space_size_total_bytes{space="old"} 49070080
+nodejs_heap_space_size_total_bytes{space="code"} 4980736
+nodejs_heap_space_size_total_bytes{space="shared"} 0
+nodejs_heap_space_size_total_bytes{space="trusted"} 3194880
+nodejs_heap_space_size_total_bytes{space="new_large_object"} 0
+nodejs_heap_space_size_total_bytes{space="large_object"} 13316096
+nodejs_heap_space_size_total_bytes{space="code_large_object"} 155648
+nodejs_heap_space_size_total_bytes{space="shared_large_object"} 0
+nodejs_heap_space_size_total_bytes{space="trusted_large_object"} 0
+
+# HELP nodejs_heap_space_size_used_bytes Process heap space size used from Node.js in bytes.
+# TYPE nodejs_heap_space_size_used_bytes gauge
+nodejs_heap_space_size_used_bytes{space="read_only"} 0
+nodejs_heap_space_size_used_bytes{space="new"} 399376
+nodejs_heap_space_size_used_bytes{space="old"} 33051568
+nodejs_heap_space_size_used_bytes{space="code"} 4316288
+nodejs_heap_space_size_used_bytes{space="shared"} 0
+nodejs_heap_space_size_used_bytes{space="trusted"} 2389520
+nodejs_heap_space_size_used_bytes{space="new_large_object"} 0
+nodejs_heap_space_size_used_bytes{space="large_object"} 13237872
+nodejs_heap_space_size_used_bytes{space="code_large_object"} 138432
+nodejs_heap_space_size_used_bytes{space="shared_large_object"} 0
+nodejs_heap_space_size_used_bytes{space="trusted_large_object"} 0
+
+# HELP nodejs_heap_space_size_available_bytes Process heap space size available from Node.js in bytes.
+# TYPE nodejs_heap_space_size_available_bytes gauge
+nodejs_heap_space_size_available_bytes{space="read_only"} 0
+nodejs_heap_space_size_available_bytes{space="new"} 631536
+nodejs_heap_space_size_available_bytes{space="old"} 15071464
+nodejs_heap_space_size_available_bytes{space="code"} 352544
+nodejs_heap_space_size_available_bytes{space="shared"} 0
+nodejs_heap_space_size_available_bytes{space="trusted"} 746976
+nodejs_heap_space_size_available_bytes{space="new_large_object"} 1048576
+nodejs_heap_space_size_available_bytes{space="large_object"} 0
+nodejs_heap_space_size_available_bytes{space="code_large_object"} 0
+nodejs_heap_space_size_available_bytes{space="shared_large_object"} 0
+nodejs_heap_space_size_available_bytes{space="trusted_large_object"} 0
+
+# HELP nodejs_version_info Node.js version info.
+# TYPE nodejs_version_info gauge
+nodejs_version_info{version="v22.23.5",major="22",minor="23",patch="5"} 1
+
+# HELP nodejs_gc_duration_seconds Garbage collection duration by kind, one of major, minor, incremental or weakcb.
+# TYPE nodejs_gc_duration_seconds histogram
+nodejs_gc_duration_seconds_bucket{le="0.001",kind="minor"} 1040
+nodejs_gc_duration_seconds_bucket{le="0.01",kind="minor"} 1089
+nodejs_gc_duration_seconds_bucket{le="0.1",kind="minor"} 1134
+nodejs_gc_duration_seconds_bucket{le="1",kind="minor"} 1134
+nodejs_gc_duration_seconds_bucket{le="2",kind="minor"} 1134
+nodejs_gc_duration_seconds_bucket{le="5",kind="minor"} 1134
+nodejs_gc_duration_seconds_bucket{le="+Inf",kind="minor"} 1134
+nodejs_gc_duration_seconds_sum{kind="minor"} 3.8321845455169696
+nodejs_gc_duration_seconds_count{kind="minor"} 1134
+nodejs_gc_duration_seconds_bucket{le="0.001",kind="incremental"} 10
+nodejs_gc_duration_seconds_bucket{le="0.01",kind="incremental"} 10
+nodejs_gc_duration_seconds_bucket{le="0.1",kind="incremental"} 11
+nodejs_gc_duration_seconds_bucket{le="1",kind="incremental"} 11
+nodejs_gc_duration_seconds_bucket{le="2",kind="incremental"} 11
+nodejs_gc_duration_seconds_bucket{le="5",kind="incremental"} 11
+nodejs_gc_duration_seconds_bucket{le="+Inf",kind="incremental"} 11
+nodejs_gc_duration_seconds_sum{kind="incremental"} 0.03683285164833069
+nodejs_gc_duration_seconds_count{kind="incremental"} 11
+nodejs_gc_duration_seconds_bucket{le="0.001",kind="major"} 0
+nodejs_gc_duration_seconds_bucket{le="0.01",kind="major"} 4
+nodejs_gc_duration_seconds_bucket{le="0.1",kind="major"} 7
+nodejs_gc_duration_seconds_bucket{le="1",kind="major"} 8
+nodejs_gc_duration_seconds_bucket{le="2",kind="major"} 8
+nodejs_gc_duration_seconds_bucket{le="5",kind="major"} 8
+nodejs_gc_duration_seconds_bucket{le="+Inf",kind="major"} 8
+nodejs_gc_duration_seconds_sum{kind="major"} 0.3303948538303375
+nodejs_gc_duration_seconds_count{kind="major"} 8
+
+# HELP http_request_duration_seconds HTTP request duration in seconds, by method, route and status code
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.005",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.01",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.025",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.05",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.1",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.15",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.2",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.3",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.5",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="1",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="2.5",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="5",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="+Inf",method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_sum{method="GET",route="/health",status_code="200"} 0.01805297599995902
+http_request_duration_seconds_count{method="GET",route="/health",status_code="200"} 51
+http_request_duration_seconds_bucket{le="0.005",method="GET",route="/catalog/products",status_code="200"} 6679
+http_request_duration_seconds_bucket{le="0.01",method="GET",route="/catalog/products",status_code="200"} 6753
+http_request_duration_seconds_bucket{le="0.025",method="GET",route="/catalog/products",status_code="200"} 6803
+http_request_duration_seconds_bucket{le="0.05",method="GET",route="/catalog/products",status_code="200"} 6833
+http_request_duration_seconds_bucket{le="0.1",method="GET",route="/catalog/products",status_code="200"} 6969
+http_request_duration_seconds_bucket{le="0.15",method="GET",route="/catalog/products",status_code="200"} 6996
+http_request_duration_seconds_bucket{le="0.2",method="GET",route="/catalog/products",status_code="200"} 7004
+http_request_duration_seconds_bucket{le="0.3",method="GET",route="/catalog/products",status_code="200"} 7010
+http_request_duration_seconds_bucket{le="0.5",method="GET",route="/catalog/products",status_code="200"} 7016
+http_request_duration_seconds_bucket{le="1",method="GET",route="/catalog/products",status_code="200"} 7018
+http_request_duration_seconds_bucket{le="2.5",method="GET",route="/catalog/products",status_code="200"} 7020
+http_request_duration_seconds_bucket{le="5",method="GET",route="/catalog/products",status_code="200"} 7020
+http_request_duration_seconds_bucket{le="+Inf",method="GET",route="/catalog/products",status_code="200"} 7020
+http_request_duration_seconds_sum{method="GET",route="/catalog/products",status_code="200"} 33.43441665700112
+http_request_duration_seconds_count{method="GET",route="/catalog/products",status_code="200"} 7020
+http_request_duration_seconds_bucket{le="0.005",method="POST",route="/catalog/products",status_code="201"} 327
+http_request_duration_seconds_bucket{le="0.01",method="POST",route="/catalog/products",status_code="201"} 458
+http_request_duration_seconds_bucket{le="0.025",method="POST",route="/catalog/products",status_code="201"} 472
+http_request_duration_seconds_bucket{le="0.05",method="POST",route="/catalog/products",status_code="201"} 484
+http_request_duration_seconds_bucket{le="0.1",method="POST",route="/catalog/products",status_code="201"} 495
+http_request_duration_seconds_bucket{le="0.15",method="POST",route="/catalog/products",status_code="201"} 499
+http_request_duration_seconds_bucket{le="0.2",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="0.3",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="0.5",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="1",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="2.5",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="5",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="+Inf",method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_sum{method="POST",route="/catalog/products",status_code="201"} 4.319355127000013
+http_request_duration_seconds_count{method="POST",route="/catalog/products",status_code="201"} 500
+http_request_duration_seconds_bucket{le="0.005",method="POST",route="/orders",status_code="201"} 0
+http_request_duration_seconds_bucket{le="0.01",method="POST",route="/orders",status_code="201"} 0
+http_request_duration_seconds_bucket{le="0.025",method="POST",route="/orders",status_code="201"} 195
+http_request_duration_seconds_bucket{le="0.05",method="POST",route="/orders",status_code="201"} 248
+http_request_duration_seconds_bucket{le="0.1",method="POST",route="/orders",status_code="201"} 305
+http_request_duration_seconds_bucket{le="0.15",method="POST",route="/orders",status_code="201"} 336
+http_request_duration_seconds_bucket{le="0.2",method="POST",route="/orders",status_code="201"} 351
+http_request_duration_seconds_bucket{le="0.3",method="POST",route="/orders",status_code="201"} 385
+http_request_duration_seconds_bucket{le="0.5",method="POST",route="/orders",status_code="201"} 410
+http_request_duration_seconds_bucket{le="1",method="POST",route="/orders",status_code="201"} 428
+http_request_duration_seconds_bucket{le="2.5",method="POST",route="/orders",status_code="201"} 431
+http_request_duration_seconds_bucket{le="5",method="POST",route="/orders",status_code="201"} 431
+http_request_duration_seconds_bucket{le="+Inf",method="POST",route="/orders",status_code="201"} 431
+http_request_duration_seconds_sum{method="POST",route="/orders",status_code="201"} 50.04179744399987
+http_request_duration_seconds_count{method="POST",route="/orders",status_code="201"} 431
+http_request_duration_seconds_bucket{le="0.005",method="GET",route="/catalog/products/:id",status_code="200"} 1054
+http_request_duration_seconds_bucket{le="0.01",method="GET",route="/catalog/products/:id",status_code="200"} 1138
+http_request_duration_seconds_bucket{le="0.025",method="GET",route="/catalog/products/:id",status_code="200"} 1157
+http_request_duration_seconds_bucket{le="0.05",method="GET",route="/catalog/products/:id",status_code="200"} 1174
+http_request_duration_seconds_bucket{le="0.1",method="GET",route="/catalog/products/:id",status_code="200"} 1221
+http_request_duration_seconds_bucket{le="0.15",method="GET",route="/catalog/products/:id",status_code="200"} 1241
+http_request_duration_seconds_bucket{le="0.2",method="GET",route="/catalog/products/:id",status_code="200"} 1244
+http_request_duration_seconds_bucket{le="0.3",method="GET",route="/catalog/products/:id",status_code="200"} 1254
+http_request_duration_seconds_bucket{le="0.5",method="GET",route="/catalog/products/:id",status_code="200"} 1261
+http_request_duration_seconds_bucket{le="1",method="GET",route="/catalog/products/:id",status_code="200"} 1261
+http_request_duration_seconds_bucket{le="2.5",method="GET",route="/catalog/products/:id",status_code="200"} 1261
+http_request_duration_seconds_bucket{le="5",method="GET",route="/catalog/products/:id",status_code="200"} 1261
+http_request_duration_seconds_bucket{le="+Inf",method="GET",route="/catalog/products/:id",status_code="200"} 1261
+http_request_duration_seconds_sum{method="GET",route="/catalog/products/:id",status_code="200"} 15.11911753700031
+http_request_duration_seconds_count{method="GET",route="/catalog/products/:id",status_code="200"} 1261

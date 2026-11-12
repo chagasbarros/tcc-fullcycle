@@ -42,7 +42,7 @@ A classe `PostgresIdempotencyLock` não mudou. Só mudou o client que ela recebe
   - Throughput: **168 → 603 req/s**
   - Teste de integração de regressão (`tests/integration/idempotency-key.test.ts`): com um pool compartilhado de 2 conexões e 6 pedidos simultâneos, aparecem `500`. Com pools separados, os 6 pedidos são criados.
 - **Negativas:**
-  - **Mais conexões no PostgreSQL:** até 20 por processo da API, em vez de 10. No Render, a mesma instância serve staging e produção (ADR-0018), então são até 40 no total, dentro do limite do plano.
+  - **Mais conexões no PostgreSQL:** até 20 por processo da API, em vez de 10. No Render, a mesma instância serve staging e produção (ADR-0018), então são até 40 no total. O `max_connections` da instância é **100** (conferido em 12/11, com o connection pooling do Render desligado): sobra folga para as migrations no start, o `psql` de manutenção e as conexões do próprio Render.
   - **A espera continua:** com o cache desligado, o `POST /orders` ficou com p95 de 1,5 s, porque os pedidos com chave fazem fila no pool de travas. Com o cache ligado, as leituras liberam o pool de trabalho e o p95 cai para 64 ms.
   - Dois números para ajustar em vez de um.
 

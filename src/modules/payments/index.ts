@@ -25,7 +25,7 @@ export interface PaymentsModule {
 
 export interface PaymentsModuleDeps {
   paymentRepository: PaymentRepository;
-  /** One provider per payment method (Strategy, provisional until ADR-0003). */
+  /** One provider per payment method (Strategy, ADR-0003). */
   providers: readonly PaymentProvider[];
   resultPublisher: PaymentResultPublisher;
   newId: () => string;

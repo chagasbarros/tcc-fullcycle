@@ -22,28 +22,28 @@
 
 ## 3. Stack (padrão — confirmar)
 
-| Área                   | Escolha                                        | Observação                                    |
-| ---------------------- | ---------------------------------------------- | --------------------------------------------- |
-| Runtime / linguagem    | Node.js 22 LTS + TypeScript (strict)           |                                               |
-| HTTP                   | **Fastify** ✅ decidido                        | ADR-0001 (descartado: NestJS)                 |
-| Banco                  | PostgreSQL 16                                  |                                               |
-| ORM / Database Pattern | Prisma + **Repository**                        | ⏳ provisório, depende do módulo 4 (seção 12) |
-| Cache                  | Redis (cache-aside com TTL)                    |                                               |
-| Fila                   | BullMQ (sobre Redis)                           | Processamento de pagamento assíncrono         |
-| Validação / config     | Zod                                            | Config validada no boot                       |
-| Testes                 | Vitest + Testcontainers + Pact                 | Unit, integração, contrato                    |
-| Coverage               | @vitest/coverage-v8 (+ Codecov opcional)       | Mínimo declarado no `vitest.config.ts`        |
-| Lint                   | ESLint + Prettier + `eslint-plugin-boundaries` | Boundaries garante a fronteira dos módulos    |
-| Logs                   | pino (JSON estruturado)                        |                                               |
-| Métricas               | prom-client → Prometheus + Grafana             | Métricas RED                                  |
-| Tracing                | OpenTelemetry → Jaeger                         |                                               |
-| Feature flag           | Unleash (self-hosted no compose)               |                                               |
-| OpenAPI                | OpenAPI 3.1 + Spectral (lint) + Swagger UI     |                                               |
-| CI                     | GitHub Actions                                 | lint, typecheck, testes, coverage, SCA        |
-| SCA / segredos         | npm audit + Trivy + gitleaks                   |                                               |
-| Deploy                 | Render                                         | Ambientes `staging` e `production`            |
-| Carga                  | k6 + clinic.js + EXPLAIN ANALYZE               |                                               |
-| Diagramas              | Mermaid (C4)                                   |                                               |
+| Área                   | Escolha                                        | Observação                                 |
+| ---------------------- | ---------------------------------------------- | ------------------------------------------ |
+| Runtime / linguagem    | Node.js 22 LTS + TypeScript (strict)           |                                            |
+| HTTP                   | **Fastify** ✅ decidido                        | ADR-0001 (descartado: NestJS)              |
+| Banco                  | PostgreSQL 16                                  |                                            |
+| ORM / Database Pattern | Prisma + **Repository**                        | ✅ ADR-0004 (Outbox proposto: ADR-0021)    |
+| Cache                  | Redis (cache-aside com TTL)                    |                                            |
+| Fila                   | BullMQ (sobre Redis)                           | Processamento de pagamento assíncrono      |
+| Validação / config     | Zod                                            | Config validada no boot                    |
+| Testes                 | Vitest + Testcontainers + Pact                 | Unit, integração, contrato                 |
+| Coverage               | @vitest/coverage-v8 (+ Codecov opcional)       | Mínimo declarado no `vitest.config.ts`     |
+| Lint                   | ESLint + Prettier + `eslint-plugin-boundaries` | Boundaries garante a fronteira dos módulos |
+| Logs                   | pino (JSON estruturado)                        |                                            |
+| Métricas               | prom-client → Prometheus + Grafana             | Métricas RED                               |
+| Tracing                | OpenTelemetry → Jaeger                         |                                            |
+| Feature flag           | Unleash (self-hosted no compose)               |                                            |
+| OpenAPI                | OpenAPI 3.1 + Spectral (lint) + Swagger UI     |                                            |
+| CI                     | GitHub Actions                                 | lint, typecheck, testes, coverage, SCA     |
+| SCA / segredos         | npm audit + Trivy + gitleaks                   |                                            |
+| Deploy                 | Render                                         | Ambientes `staging` e `production`         |
+| Carga                  | k6 + clinic.js + EXPLAIN ANALYZE               |                                            |
+| Diagramas              | Mermaid (C4)                                   |                                            |
 
 ## 4. Arquitetura — monólito modular
 
@@ -98,9 +98,9 @@ modules/<name>/
 - Cada módulo é dono das suas tabelas. Sem JOIN entre tabelas de módulos diferentes; use a API pública do outro módulo.
 - Comunicação `orders → payments` é assíncrona via fila (evento `OrderPlaced`). `payments → orders` devolve o resultado via fila (`PaymentApproved` / `PaymentFailed`).
 
-**SOLID + 1 design pattern justificado (⏳ provisório até a revisão do módulo 4 em 10/11):** **Strategy** em `payments` (`PaymentProvider` com implementações `FakeCardProvider`, `FakePixProvider`), escolhida em tempo de execução. Justificar em ADR (aberto/fechado: novo meio de pagamento sem alterar o caso de uso).
+**SOLID + 1 design pattern justificado (✅ ADR-0003, revisado com o módulo 4 em 12/11):** **Strategy** em `payments` (`PaymentProvider` com implementações `FakeCardProvider`, `FakePixProvider`), escolhida em tempo de execução. Justificar em ADR (aberto/fechado: novo meio de pagamento sem alterar o caso de uso).
 
-**Database Pattern (⏳ provisório até 10/11):** **Repository** — interfaces em `application/`, implementações Prisma em `infrastructure/`. Permite testar casos de uso com repositórios em memória. Registrar em ADR, com a alternativa descartada (Active Record / Prisma direto nos services).
+**Database Pattern (✅ ADR-0004, revisado com o módulo 4 em 12/11):** **Repository** — interfaces em `application/`, implementações Prisma em `infrastructure/`. Permite testar casos de uso com repositórios em memória. Registrar em ADR, com a alternativa descartada (Active Record / Prisma direto nos services).
 
 ## 5. Dados
 
@@ -139,8 +139,8 @@ npm run k6:after              # k6 depois da otimização
 - [ ] `docker-compose.yml` que sobe com **1 comando** (healthchecks + `depends_on`)
 - [x] Framework HTTP → `docs/adr/0001-framework-http-fastify.md`
 - [x] Monólito modular → `docs/adr/0002-monolito-modular.md` (descartado: microserviços)
-- [ ] SOLID + design pattern justificado → `docs/adr/0003-design-pattern.md` (⏳ após módulo 4)
-- [ ] Database Pattern → `docs/adr/0004-database-pattern.md` (⏳ após módulo 4)
+- [x] SOLID + design pattern justificado → `docs/adr/0003-design-pattern.md`
+- [x] Database Pattern → `docs/adr/0004-database-pattern.md` (+ Transactional Outbox proposto, ADR-0021)
 - [x] Testes unitários (`*.spec.ts` ao lado do código), integração (`tests/integration/`, Testcontainers), contrato de API (`tests/contract/`, Pact)
 - [x] Coverage mínimo **declarado no pipeline** (`vitest.config.ts` → `thresholds`, padrão: 80% linhas em `domain/` e `application/`)
 
@@ -209,7 +209,7 @@ Se o prazo apertar, priorize nesta ordem: sistema rodando com 1 comando → test
 
 ## 12. Pendências
 
-- [ ] **Dependência de decisão — Ebook de System Design, módulo 4 (resolver em 10/11, adiado de 09/11).** O autor ainda não teve acesso ao módulo 4. Até lá, o design pattern (Strategy) e o Database Pattern (Repository) são **provisórios**. Ao obter o módulo:
+- [x] **Dependência de decisão — Ebook de System Design, módulo 4 (resolvida em 12/11: Strategy e Repository mantidos, Outbox proposto).** O autor ainda não teve acesso ao módulo 4. Até lá, o design pattern (Strategy) e o Database Pattern (Repository) são **provisórios**. Ao obter o módulo:
   1. Comparar os padrões recomendados no módulo com Strategy e Repository (e avaliar Transactional Outbox, que combina com a fila idempotente).
   2. Decidir: manter ou trocar. Escrever ADR-0003 e ADR-0004 com a alternativa descartada.
   3. Remover os marcadores ⏳ deste arquivo.

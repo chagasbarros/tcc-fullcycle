@@ -1,6 +1,6 @@
 import type { Payment } from '../domain/payment.js';
 
-/** Port (Repository pattern, provisional until ADR-0004). */
+/** Port (Repository pattern, ADR-0004). */
 export interface PaymentRepository {
   findByOrderId(orderId: string): Promise<Payment | null>;
   /**

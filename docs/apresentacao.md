@@ -113,10 +113,13 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 **História para a apresentação:** o gargalo **não era consulta lenta**, e por isso o `EXPLAIN ANALYZE` não ajudava. Era um impasse no pool de conexões, causado por uma decisão anterior (a trava de idempotência do ADR-0016, que o próprio ADR já listava como custo). A evidência veio do `pg_stat_activity`, com 10 de 10 conexões em `idle in transaction`. A correção foi pequena, um pool separado (ADR-0019), e a alternativa descartada foi "só aumentar o pool", que adiaria o impasse em vez de eliminá-lo. O teste de integração reproduz o bug com 2 conexões.
 
+**k6 no Render staging (12/11, ADR-0022):** 30 VUs, cache ligado. `GET /catalog/products` com p95 de **5,0 ms dentro da API** e **99,77%** em até 200 ms: o SLO é cumprido no ambiente hospedado. Visto pelo k6, o p95 foi de 306 ms, porque a mediana de 192 ms é a rede Brasil–Virgínia. Bom argumento para a banca sobre **por que o SLO é medido dentro da API**. Também responde à ressalva do módulo 4 sobre testar só na máquina do autor.
+
 ## 5. O que faria diferente
 
 _(preencher ao fim do projeto)_ Candidatos já identificados:
 
+- **k6 num ambiente dedicado e representativo de produção** (módulo 4): o antes e o depois foram medidos no notebook (ADR-0020), e o Render gratuito só permitiu um complemento leve (ADR-0022).
 - **Trava de idempotência por linha:** o pool separado (ADR-0019) eliminou o impasse, mas os pedidos com chave ainda fazem fila no pool de travas (p95 de 1,5 s com o cache desligado). Uma trava por `INSERT` não seguraria conexão nenhuma.
 - **Transactional Outbox:** hoje salvar o pedido e publicar `OrderPlaced` não são atômicos; se a publicação falhar, o pedido fica em `PENDING_PAYMENT` (ADR-0009).
 - **Expiração de reservas:** se o worker nunca responder, o estoque fica reservado indefinidamente.

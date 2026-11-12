@@ -147,7 +147,7 @@ npm run k6:after              # k6 depois da otimização
 ### Entrega e operação
 
 - [x] `.github/workflows/ci.yml`: lint → typecheck → testes → coverage → `npm audit --audit-level=high` → Trivy → gitleaks → spectral
-- [ ] Dois ambientes (`staging`, `production`) via GitHub Environments; config só por variável de ambiente; `.env.example` versionado, `.env` no `.gitignore`; config validada com Zod no boot
+- [x] Dois ambientes (`staging`, `production`) via GitHub Environments; config só por variável de ambiente; `.env.example` versionado, `.env` no `.gitignore`; config validada com Zod no boot
 - [x] Logs estruturados (pino, com `requestId` e `traceId`)
 - [x] Métricas **RED** em `/metrics` (Rate, Errors, Duration — histograma por rota/status) + dashboard Grafana provisionado em `ops/grafana/`
 - [x] **1 trace** ponta a ponta: `POST /orders` → fila → worker de pagamento, visível no Jaeger

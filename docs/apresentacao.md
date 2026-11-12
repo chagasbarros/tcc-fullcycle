@@ -23,7 +23,7 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 4. `POST /orders` com cartão no produto de **R$ 10,13** → `PAYMENT_FAILED` (o provider fake recusa valores terminados em 13 centavos, ADR-0011) e **o estoque volta**.
 5. Mesmo produto com `paymentMethod: PIX` → `PAID` (Strategy: o provider é escolhido em tempo de execução).
 6. `POST /orders/{id}/cancel` duas vezes → `200` e depois `409` (estado final, ADR-0007).
-7. Swagger UI em `http://localhost:3000/docs`.
+7. Swagger UI em `http://localhost:3000/docs` (e o mesmo em produção: <https://marketplace-api-production.onrender.com/docs>).
 8. **Jaeger** (`http://localhost:16686`, serviço `marketplace-api`): abrir o trace do `POST /orders` do passo 3 e mostrar a API e o worker num único trace, com os SQLs da reserva de estoque.
 9. **Grafana** (`http://localhost:3001`, abre direto no dashboard "Marketplace — RED"): rate, erros (os `409` do passo 6 aparecem como 4xx) e p95 por rota com a linha de 200 ms do SLO.
 10. Copiar o `traceId` de uma linha de log da API (`docker compose logs api`) e achar o mesmo `traceId` nos logs do worker.
@@ -38,6 +38,7 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 | Worker em processo separado (ADR-0010)             | Consumers dentro da API                       | Ligado ao p95 medido no k6                                       |
 | Trace automático com OpenTelemetry (ADR-0013)      | Spans manuais                                 | 1 pedido = 34 spans em 2 processos, mostrado ao vivo no Jaeger   |
 | Idempotency-Key com trava por chave (ADR-0016)     | Chave no Redis com TTL / aceitar 409 enganoso | Teste achou bug real: 9 de 10 duplicatas recebiam `Out of Stock` |
+| Staging e produção na mesma instância (ADR-0018)   | Uma instância por ambiente / outro provedor   | Trade-off explícito: dados isolados, recursos compartilhados     |
 
 ## 4. Números medidos
 
@@ -88,6 +89,17 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 | ---------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
 | 10 `POST /orders` simultâneos, mesma chave, estoque para 1 | 1 × `201`, **9 × `409 Out of Stock`** | 1 × `201`, 9 × `409 in progress` (+ `Retry-After`); nova tentativa = mesmo pedido |
 | Idem, estoque sobrando                                     | —                                     | 1 pedido, estoque reservado 1 vez, 1 evento                                       |
+
+### Deploy no Render (12/11)
+
+| Ambiente   | URL                                                 | Como publica                                          |
+| ---------- | --------------------------------------------------- | ----------------------------------------------------- |
+| staging    | <https://marketplace-api-staging-7327.onrender.com> | Automático depois do CI verde na `main`               |
+| production | <https://marketplace-api-production.onrender.com>   | Depois do staging, com **aprovação manual** no GitHub |
+
+- **Instância compartilhada:** o plano gratuito permite 1 PostgreSQL e 1 Key Value por conta. Os dois ambientes usam a mesma instância, cada um com o seu banco (`marketplace_staging` / `marketplace_production`) e o seu banco lógico no Redis (`/1` / `/0`). Os dados ficam isolados, mas CPU, memória e conexões são compartilhados, e o vencimento de 30 dias vale para os dois.
+- **Primeira execução do workflow de deploy (12/11):** staging e produção verdes em **50 s**, com o _smoke test_ (`GET /catalog/products` → 200) passando nos dois. Os dois já estavam no commit publicado, então a espera pela versão nova só fica comprovada no próximo merge.
+- **Tropeço real:** a primeira tentativa falhou com `curl: (3) URL rejected: Malformed input`. O _deploy hook_ colado no `gh secret set` (PowerShell) ficou com um caractere invisível. A falha aconteceu **antes** de chamar o Render, então nenhum ambiente foi afetado. A solução foi colar de novo o valor pela interface do GitHub.
 
 ### k6 — antes e depois
 

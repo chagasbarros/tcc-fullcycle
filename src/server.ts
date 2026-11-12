@@ -26,7 +26,14 @@ import { startWorker } from './worker-runtime.js';
 const env = loadEnv();
 // For events outside a request (flags, cache). Request logs use Fastify's logger.
 const log = pino({ level: env.LOG_LEVEL, name: 'api' });
-const prisma = createPrismaClient(env.DATABASE_URL);
+const prisma = createPrismaClient(env.DATABASE_URL, { poolMax: env.DATABASE_POOL_MAX });
+// Own pool for the idempotency lock: each POST /orders with Idempotency-Key keeps one
+// connection busy only to hold the lock, while its work needs connections from `prisma`.
+// With a shared pool, N such requests could hold all N connections and wait forever for
+// one more (measured with k6, docs/desempenho.md). Separate pools cannot deadlock.
+const lockPrisma = createPrismaClient(env.DATABASE_URL, {
+  poolMax: env.IDEMPOTENCY_LOCK_POOL_MAX,
+});
 const redis = createRedisConnection(env.REDIS_URL);
 // The API publishes; the worker process consumes (ADR-0010), unless RUN_WORKER_IN_PROCESS.
 const orderPlacedQueue = createQueue<OrderPlaced>(QueueName.ORDER_PLACED, redis);
@@ -51,7 +58,7 @@ const orders = createOrdersModule({
   orderRepository: new PrismaOrderRepository(prisma),
   catalog: catalog.api,
   eventPublisher: new BullMqOrderEventPublisher(orderPlacedQueue),
-  idempotencyLock: new PostgresIdempotencyLock(prisma),
+  idempotencyLock: new PostgresIdempotencyLock(lockPrisma),
   newId,
 });
 
@@ -68,7 +75,7 @@ app.addHook('onClose', async () => {
   flags.close();
   cacheRedis.disconnect();
   redis.disconnect();
-  await prisma.$disconnect();
+  await Promise.all([prisma.$disconnect(), lockPrisma.$disconnect()]);
 });
 
 // Graceful shutdown: stop accepting requests and finish the in-flight ones.

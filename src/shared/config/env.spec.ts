@@ -13,6 +13,8 @@ describe('loadEnv', () => {
       HOST: '0.0.0.0',
       PORT: 3000,
       LOG_LEVEL: 'info',
+      DATABASE_POOL_MAX: 10,
+      IDEMPOTENCY_LOCK_POOL_MAX: 10,
       PAYMENT_PROVIDER_LATENCY_MS: 0,
       CATALOG_CACHE_ENABLED: true,
       RUN_WORKER_IN_PROCESS: false,

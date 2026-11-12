@@ -12,6 +12,10 @@ const envSchema = z.object({
   // Connection strings may carry credentials: required, no default.
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   REDIS_URL: z.url({ protocol: /^rediss?$/ }),
+  // Connection pools (docs/desempenho.md): one for the work, one only for the idempotency
+  // locks, so requests holding a lock can never take every connection the work needs.
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).default(10),
+  IDEMPOTENCY_LOCK_POOL_MAX: z.coerce.number().int().min(1).default(10),
   // Simulated payment gateway latency for the fake providers (ADR-0011).
   PAYMENT_PROVIDER_LATENCY_MS: z.coerce.number().int().min(0).default(0),
   // Tracing (src/instrumentation.ts reads these before the app starts; validated here too).

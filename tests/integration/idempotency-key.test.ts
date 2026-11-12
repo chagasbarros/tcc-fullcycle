@@ -9,6 +9,7 @@ import {
   PrismaOrderRepository,
 } from '../../src/modules/orders/index.js';
 import { buildApp } from '../../src/app.js';
+import type { PrismaClient } from '../../src/shared/db/prisma.js';
 import { testPrisma, truncateAll } from './helpers.js';
 
 /** Idempotency-Key (ADR-0016) against the real UNIQUE(customer_id, idempotency_key). */
@@ -107,4 +108,74 @@ describe('Idempotency-Key (PostgreSQL)', () => {
       );
     },
   );
+
+  /**
+   * Bottleneck found with k6 (docs/desempenho.md): each request with a key keeps one
+   * connection busy holding the lock, and its work needs more connections. With ONE shared
+   * pool of size N, N concurrent requests take all N connections as locks and starve.
+   */
+  describe('connection pools under concurrent orders with different keys', () => {
+    const POOL = 2;
+    const CONCURRENT = 6;
+
+    async function placeConcurrently(work: PrismaClient, locks: PrismaClient) {
+      const catalog = createCatalogModule({
+        productRepository: new PrismaProductRepository(work),
+        newId: v7,
+      });
+      const app = await buildApp({
+        env: { NODE_ENV: 'test', LOG_LEVEL: 'fatal' },
+        catalog,
+        orders: createOrdersModule({
+          orderRepository: new PrismaOrderRepository(work),
+          catalog: catalog.api,
+          eventPublisher: new InMemoryOrderEventPublisher(),
+          idempotencyLock: new PostgresIdempotencyLock(locks),
+          newId: v7,
+        }),
+      });
+      const product = await app.inject({
+        method: 'POST',
+        url: '/catalog/products',
+        payload: { name: 'Keyboard', priceInCents: 34_990, stock: 100 },
+      });
+      const productId = product.json<{ id: string }>().id;
+      const responses = await Promise.all(
+        Array.from({ length: CONCURRENT }, () =>
+          app.inject({
+            method: 'POST',
+            url: '/orders',
+            headers: { 'idempotency-key': v7() },
+            payload: {
+              customerId: v7(),
+              paymentMethod: 'PIX',
+              items: [{ productId, quantity: 1 }],
+            },
+          }),
+        ),
+      );
+      await app.close();
+      return responses.map((r) => r.statusCode);
+    }
+
+    it('separate pools (as in src/server.ts): every order is created', async () => {
+      const work = testPrisma({ poolMax: POOL });
+      const locks = testPrisma({ poolMax: POOL });
+      try {
+        expect(await placeConcurrently(work, locks)).toEqual(Array(CONCURRENT).fill(201));
+      } finally {
+        await Promise.all([work.$disconnect(), locks.$disconnect()]);
+      }
+    });
+
+    it('one shared pool (the bug): requests holding locks starve and fail', async () => {
+      const shared = testPrisma({ poolMax: POOL });
+      try {
+        const statuses = await placeConcurrently(shared, shared);
+        expect(statuses.filter((status) => status === 500).length).toBeGreaterThan(0);
+      } finally {
+        await shared.$disconnect();
+      }
+    }, 30_000);
+  });
 });

@@ -9,6 +9,8 @@ import type { IdempotencyLock, LockOutcome } from '../application/idempotency-lo
  * - _xact_: released automatically when the transaction ends, even if the process dies.
  * - The key text is hashed to the 64-bit number advisory locks use.
  * The transaction exists only to hold the lock; the work runs on other connections.
+ * So give this class its OWN PrismaClient (own pool), not the one the work uses: otherwise
+ * N concurrent requests can hold all N connections as locks and starve their own work.
  */
 export class PostgresIdempotencyLock implements IdempotencyLock {
   constructor(private readonly prisma: PrismaClient) {}

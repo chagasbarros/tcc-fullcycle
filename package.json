@@ -25,6 +25,8 @@
     "start:worker": "node --import ./dist/instrumentation.js dist/worker.js",
     "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "k6:baseline": "node k6/run.mjs baseline --cache off",
+    "k6:after": "node k6/run.mjs after-cache --cache on",
     "openapi:lint": "spectral lint docs/openapi.yaml --fail-severity=warn",
     "test:contract": "vitest run --config vitest.contract.config.ts consumer && vitest run --config vitest.contract.config.ts provider"
   },

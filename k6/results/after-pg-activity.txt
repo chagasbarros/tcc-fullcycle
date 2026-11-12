@@ -1,0 +1,30 @@
+18:32:19 -
+18:32:30 idle=8
+18:32:40 idle=13
+18:32:50 idle=13
+18:33:01 idle=14 idle in transaction=2
+18:33:11 idle=11 idle in transaction=9
+18:33:22 active=2 idle=7 idle in transaction=11
+18:33:32 idle=9 idle in transaction=11
+18:33:43 idle=10 idle in transaction=10
+18:33:53 active=2 idle=5 idle in transaction=13
+18:34:03 active=2 idle=5 idle in transaction=13
+18:34:14 idle=10 idle in transaction=10
+18:34:24 idle=10 idle in transaction=10
+18:34:35 active=2 idle=7 idle in transaction=11
+18:34:45 active=1 idle=9 idle in transaction=10
+18:34:56 idle=7 idle in transaction=13
+18:35:06 idle=10 idle in transaction=10
+18:35:17 active=2 idle=8 idle in transaction=10
+18:35:27 idle=6 idle in transaction=14
+18:35:37 active=1 idle=6 idle in transaction=13
+18:35:48 active=3 idle=7 idle in transaction=10
+18:35:58 idle=7 idle in transaction=13
+18:36:09 active=3 idle=7 idle in transaction=10
+18:36:19 idle=10 idle in transaction=10
+18:36:30 idle=7 idle in transaction=13
+18:36:40 active=2 idle=15 idle in transaction=3
+18:36:51 idle=19 idle in transaction=1
+18:37:01 active=2 idle=14
+18:37:11 idle=13
+18:37:22 idle=12

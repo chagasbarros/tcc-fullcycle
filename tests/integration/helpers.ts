@@ -1,8 +1,12 @@
 import { inject } from 'vitest';
-import { createPrismaClient, type PrismaClient } from '../../src/shared/db/prisma.js';
+import {
+  createPrismaClient,
+  type PrismaClient,
+  type PrismaClientOptions,
+} from '../../src/shared/db/prisma.js';
 
-export function testPrisma(): PrismaClient {
-  return createPrismaClient(inject('databaseUrl'));
+export function testPrisma(options?: PrismaClientOptions): PrismaClient {
+  return createPrismaClient(inject('databaseUrl'), options);
 }
 
 /** Empties every business table, so each test starts from a clean database. */

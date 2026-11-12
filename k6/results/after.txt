@@ -1,0 +1,15 @@
+catalog-cache-enabled = off; waiting 10 s for the API to pick it up
+
+== after ==
+total: 603.0 req/s, errors 0.00%
+GET /catalog/products        p95 97.3 ms | p99 128.4 ms | med 61.5 ms | errors 0.00%
+GET /catalog/products/{id}   p95 96.4 ms | p99 129.1 ms | med 60.8 ms | errors 0.00%
+POST /orders                 p95 1505.8 ms | p99 1650.0 ms | med 1067.9 ms | errors 0.00%
+threshold http_req_failed{name:GET /catalog/products/{id}} rate<0.01: OK
+threshold http_req_duration{name:GET /catalog/products/{id}} p(95)<500: OK
+threshold http_req_failed{name:GET /catalog/products} rate<0.01: OK
+threshold http_req_failed{name:POST /orders} rate<0.01: OK
+threshold http_req_failed rate<0.01: OK
+threshold http_req_duration{name:GET /catalog/products} p(95)<200: OK
+threshold http_req_duration{name:POST /orders} p(95)<500: FAILED
+time="2026-11-12T21:37:25Z" level=error msg="thresholds on metrics 'http_req_duration{name:POST /orders}' have been crossed"

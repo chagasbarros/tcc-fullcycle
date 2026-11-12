@@ -1,0 +1,14 @@
+catalog-cache-enabled = on; waiting 10 s for the API to pick it up
+
+== after-cache ==
+total: 787.4 req/s, errors 0.00%
+GET /catalog/products        p95 8.3 ms | p99 21.0 ms | med 1.7 ms | errors 0.00%
+GET /catalog/products/{id}   p95 9.1 ms | p99 18.2 ms | med 1.9 ms | errors 0.00%
+POST /orders                 p95 64.2 ms | p99 220.7 ms | med 20.1 ms | errors 0.00%
+threshold http_req_failed{name:GET /catalog/products} rate<0.01: OK
+threshold http_req_duration{name:GET /catalog/products/{id}} p(95)<500: OK
+threshold http_req_duration{name:GET /catalog/products} p(95)<200: OK
+threshold http_req_failed rate<0.01: OK
+threshold http_req_failed{name:GET /catalog/products/{id}} rate<0.01: OK
+threshold http_req_duration{name:POST /orders} p(95)<500: OK
+threshold http_req_failed{name:POST /orders} rate<0.01: OK

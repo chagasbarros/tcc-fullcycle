@@ -28,7 +28,9 @@ export default tseslint.config(
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
   },
-  { files: ['**/*.js'], ...tseslint.configs.disableTypeChecked },
+  { files: ['**/*.js', '**/*.mjs'], ...tseslint.configs.disableTypeChecked },
+  // k6 scripts run inside k6, which provides __ENV (and the web `crypto`).
+  { files: ['k6/**/*.js'], languageOptions: { globals: { __ENV: 'readonly' } } },
 
   // ---------------------------------------------------------------------------
   // Module boundaries (CLAUDE.md, section 4)

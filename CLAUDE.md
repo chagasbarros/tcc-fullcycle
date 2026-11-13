@@ -136,7 +136,7 @@ npm run k6:after              # k6 depois da otimização
 
 ### Base de qualidade
 
-- [ ] `docker-compose.yml` que sobe com **1 comando** (healthchecks + `depends_on`)
+- [x] `docker-compose.yml` que sobe com **1 comando** (healthchecks + `depends_on`)
 - [x] Framework HTTP → `docs/adr/0001-framework-http-fastify.md`
 - [x] Monólito modular → `docs/adr/0002-monolito-modular.md` (descartado: microserviços)
 - [x] SOLID + design pattern justificado → `docs/adr/0003-design-pattern.md`

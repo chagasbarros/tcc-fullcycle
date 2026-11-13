@@ -157,10 +157,10 @@ npm run k6:after              # k6 depois da otimização
 
 ### Arquitetura e desempenho
 
-- [ ] ADRs (MADR) em `docs/adr/`, **cada um com a alternativa descartada**
+- [x] ADRs (MADR) em `docs/adr/`, **cada um com a alternativa descartada**
 - [x] C4 de **contexto** (`docs/c4/contexto.md`) e de **contêiner** (`docs/c4/conteiner.md`) em Mermaid
-- [ ] OpenAPI 3.1 de **catálogo** e **pedido** em `docs/openapi.yaml` (arquivo único), com lint no pipeline e Swagger UI em `/docs`
-- [ ] Plano de p95 em `docs/desempenho.md`:
+- [x] OpenAPI 3.1 de **catálogo** e **pedido** em `docs/openapi.yaml` (arquivo único), com lint no pipeline e Swagger UI em `/docs`
+- [x] Plano de p95 em `docs/desempenho.md`:
   - **Cache com tolerância:** cache-aside no Redis para leitura de catálogo, TTL declarado (ex.: 60 s de dados possivelmente desatualizados aceitos) e invalidação na escrita
   - **Idempotência da fila:** header `Idempotency-Key` no `POST /orders`; `jobId = orderId` no BullMQ; consumer verifica o estado do pagamento antes de processar (reentrega não cobra duas vezes)
 - [x] k6 em **3 estágios** (`stages`: rampa de subida → sustentação → rampa de descida) em `k6/`; relatório em `docs/desempenho.md` com **gargalo identificado, antes e depois** (números de p95, RPS, erro), evidência via `EXPLAIN ANALYZE` e/ou clinic.js
@@ -168,7 +168,7 @@ npm run k6:after              # k6 depois da otimização
 ### Documentos obrigatórios
 
 - [x] `README.md` — **a primeira linha deve ser:** `Nível escolhido: Projeto A (Avançado)`. Depois: como subir, como testar, link do CI verde
-- [ ] `docs/desempenho.md`
+- [x] `docs/desempenho.md`
 - [x] `docs/ia.md` — prompts que importaram
 - [x] `CONTRIBUTORS.md`
 
@@ -178,10 +178,10 @@ npm run k6:after              # k6 depois da otimização
 | ------ | ------------------------------------------------------------------------------------------------------------------- |
 | Sáb 07 | Setup: repo, TS, ESLint/boundaries, compose, Prisma, esqueleto dos 3 módulos, ADR-0001 (Fastify) ✅                 |
 | Dom 08 | Domínio e casos de uso de catalog/orders/payments, seed 100k, ADR-0002. Patterns atrás de interfaces (trocáveis) ✅ |
-| Seg 09 | Testes de integração (Testcontainers) e contrato (Pact), coverage threshold, OpenAPI + Spectral + Swagger UI        |
-| Ter 10 | **Revisar módulo 4 e fechar ADR-0003/0004**; CI completo, ambientes e segredos, logs, métricas RED, trace, SLO      |
-| Qua 11 | Cache + flag, fila idempotente, C4, ADRs restantes, deploy no Render                                                |
-| Qui 12 | k6 baseline → achar gargalo → otimizar → k6 after → `docs/desempenho.md`                                            |
+| Seg 09 | Testes de integração (Testcontainers) e contrato (Pact), coverage threshold, OpenAPI + Spectral + Swagger UI ✅     |
+| Ter 10 | **Revisar módulo 4 e fechar ADR-0003/0004**; CI completo, ambientes e segredos, logs, métricas RED, trace, SLO ✅   |
+| Qua 11 | Cache + flag, fila idempotente, C4, ADRs restantes, deploy no Render ✅                                             |
+| Qui 12 | k6 baseline → achar gargalo → otimizar → k6 after → `docs/desempenho.md` ✅                                         |
 | Sex 13 | README final, `docs/ia.md`, CONTRIBUTORS, CI verde, **entrega**                                                     |
 
 Se o prazo apertar, priorize nesta ordem: sistema rodando com 1 comando → testes + CI verde → docs obrigatórios → k6 com antes/depois → observabilidade → flag/deploy.
@@ -209,9 +209,8 @@ Se o prazo apertar, priorize nesta ordem: sistema rodando com 1 comando → test
 
 ## 12. Pendências
 
-- [x] **Dependência de decisão — Ebook de System Design, módulo 4 (resolvida em 12/11: Strategy e Repository mantidos, Outbox proposto).** O autor ainda não teve acesso ao módulo 4. Até lá, o design pattern (Strategy) e o Database Pattern (Repository) são **provisórios**. Ao obter o módulo:
+- [x] **Dependência de decisão — Ebook de System Design, módulo 4 (resolvida em 12/11: Strategy e Repository mantidos, Outbox proposto).** Registro do que foi feito:
   1. Comparar os padrões recomendados no módulo com Strategy e Repository (e avaliar Transactional Outbox, que combina com a fila idempotente).
   2. Decidir: manter ou trocar. Escrever ADR-0003 e ADR-0004 com a alternativa descartada.
   3. Remover os marcadores ⏳ deste arquivo.
-  - **Enquanto isso:** implemente esses padrões sempre atrás de interfaces, para que a troca custe pouco. Não escreva os ADRs 0003/0004 antes dessa revisão.
 - [x] Estrutura mínima esperada — incorporada na seção 4.

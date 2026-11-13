@@ -1,7 +1,7 @@
 # ADR-0016 — Idempotency-Key no POST /orders: chave no PostgreSQL e trava por chave
 
 - **Status:** Aceito
-- **Data:** 2026-11-10
+- **Data:** 2026-11-09
 - **Decisor:** Chagas Barros
 
 ## Contexto e problema

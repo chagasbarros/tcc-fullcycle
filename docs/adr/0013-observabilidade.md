@@ -1,7 +1,7 @@
 # ADR-0013 — Observabilidade: OpenTelemetry automático para traces e hook próprio para métricas RED
 
 - **Status:** Aceito
-- **Data:** 2026-11-10
+- **Data:** 2026-11-09
 - **Decisor:** Chagas Barros
 
 ## Contexto e problema
@@ -55,7 +55,7 @@ Duas perguntas:
 ## Consequências
 
 - **Positivas:**
-  - **Medido em 10/11:** um pedido gerou **34 spans em 2 serviços num único trace**. O mesmo `traceId` aparece no log da API e nos dois jobs do worker.
+  - **Medido em 09/11:** um pedido gerou **34 spans em 2 serviços num único trace**. O mesmo `traceId` aparece no log da API e nos dois jobs do worker.
   - O trace mostra cada SQL (reserva de estoque, `INSERT` do pedido) e cada comando Redis. Isso é o necessário para achar o gargalo no k6.
   - O evento `OrderPlaced` não mudou: o contexto do trace viaja nos metadados do job.
   - Logs, métricas e traces se ligam: o p95 alto aparece no Grafana, o trace no Jaeger mostra onde o tempo foi gasto, e o log com o mesmo `traceId` mostra o que aconteceu.

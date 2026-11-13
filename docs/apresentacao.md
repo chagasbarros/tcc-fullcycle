@@ -122,7 +122,7 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 ## 5. O que faria diferente
 
-_(preencher ao fim do projeto)_ Candidatos já identificados:
+Revisado pelo autor em 13/11.
 
 - **k6 num ambiente dedicado e representativo de produção** (módulo 4): o antes e o depois foram medidos no notebook (ADR-0020), e o Render gratuito só permitiu um complemento leve (ADR-0022).
 - **Trava de idempotência por linha:** o pool separado (ADR-0019) eliminou o impasse, mas os pedidos com chave ainda fazem fila no pool de travas (p95 de 1,5 s com o cache desligado). Uma trava por `INSERT` não seguraria conexão nenhuma.

@@ -108,11 +108,11 @@
 
 O `CLAUDE.md` pede duas opções e a decisão do autor em toda escolha relevante. Estas não seguiram a regra e ficam registradas:
 
-| Data  | Decisão                                                                                             | Como foi tratada                                                |
-| ----- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 09/11 | Pact com consumidor simulado                                                                        | O autor pediu o ADR depois (ADR-0012)                           |
-| 09/11 | SLO dividido em duas metas: 95% em até 200 ms e 99% sem 5xx                                         | A IA pediu para o autor conferir; não houve resposta registrada |
-| 09/11 | Unleash com um PostgreSQL próprio, depois de ele não conseguir criar o schema no banco da aplicação | Registrado no ADR-0015, sem opções apresentadas                 |
+| Data  | Decisão                                                                                             | Como foi tratada                                                           |
+| ----- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 09/11 | Pact com consumidor simulado                                                                        | O autor pediu o ADR depois (ADR-0012)                                      |
+| 09/11 | SLO dividido em duas metas: 95% em até 200 ms e 99% sem 5xx                                         | A IA pediu para o autor conferir; o autor confirmou as duas metas em 13/11 |
+| 09/11 | Unleash com um PostgreSQL próprio, depois de ele não conseguir criar o schema no banco da aplicação | Registrado no ADR-0015, sem opções apresentadas                            |
 
 ### Outras escolhas do autor (recomendação da IA aceita)
 

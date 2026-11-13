@@ -1,7 +1,7 @@
 # ADR-0015 — Feature flags: Unleash no ambiente local, variável de ambiente no Render
 
 - **Status:** Aceito
-- **Data:** 2026-11-10
+- **Data:** 2026-11-09
 - **Decisor:** Chagas Barros
 
 ## Contexto e problema
@@ -38,7 +38,7 @@ A escolha é feita no boot. Com `UNLEASH_URL` definida, o projeto usa o Unleash,
 ## Consequências
 
 - **Positivas:**
-  - O kill switch funciona ao vivo no ambiente local: desligar a flag na interface do Unleash faz as leituras irem ao banco em até cerca de 5 s, sem reiniciar (verificado em 10/11).
+  - O kill switch funciona ao vivo no ambiente local: desligar a flag na interface do Unleash faz as leituras irem ao banco em até cerca de 5 s, sem reiniciar (verificado em 09/11).
   - Nada de servidor de flags para pagar ou manter no Render.
   - O código de negócio não conhece o Unleash. Trocar de fornecedor de flags é escrever outra implementação da interface.
   - Os nomes das flags são um tipo (`Flag`): um nome digitado errado vira erro de compilação, não uma flag silenciosamente desligada.

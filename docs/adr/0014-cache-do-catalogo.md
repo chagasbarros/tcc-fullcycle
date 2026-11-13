@@ -1,7 +1,7 @@
 # ADR-0014 — Cache-aside do catálogo no Redis com tolerância de 60 s
 
 - **Status:** Aceito
-- **Data:** 2026-11-10
+- **Data:** 2026-11-09
 - **Decisor:** Chagas Barros
 
 ## Contexto e problema
@@ -37,7 +37,7 @@ A complicação é o **estoque**. Ele muda a cada pedido (reserva) e a cada paga
 - **Positivas:**
   - Sob carga, a listagem passa a vir da memória do Redis em vez de consulta e `COUNT` no banco. O ganho será medido no k6 (`docs/desempenho.md`).
   - **Seguro para o negócio:** o pedido verifica o estoque de forma atômica no banco (ADR-0009). O pior caso é a listagem mostrar "tem estoque" e o pedido responder `409`.
-  - O cache pode ser ligado e desligado em segundos pela flag `catalog-cache-enabled` (verificado em 10/11 com o Unleash local).
+  - O cache pode ser ligado e desligado em segundos pela flag `catalog-cache-enabled` (verificado em 09/11 com o Unleash local).
   - Testado contra Redis real (Testcontainers): acerto do cache, TTL, invalidação, defasagem do estoque, flag desligada e Redis fora do ar.
 - **Negativas:**
   - **Defasagem visível:** um cliente pode ver estoque 10 quando restam 7, por até 60 s.

@@ -1,7 +1,7 @@
 # ADR-0017 — Gatilhos do CI: em todo pull request e no push para a main
 
 - **Status:** Aceito
-- **Data:** 2026-11-10
+- **Data:** 2026-11-09
 - **Decisor:** Chagas Barros
 
 ## Contexto e problema

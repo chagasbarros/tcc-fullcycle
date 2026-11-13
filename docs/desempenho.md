@@ -32,7 +32,7 @@ Três camadas, da entrada até a cobrança:
 - **Mesma chave com outro conteúdo:** responde `422`.
 - **Requisição com a mesma chave ainda em andamento:** responde `409` com `Retry-After: 1`.
 
-**Medido (10/11, PostgreSQL real):** com 10 requisições simultâneas e a mesma chave, o resultado foi **1 pedido**, estoque reservado **uma vez** e **1 evento**. Sem a trava, com estoque baixo, 9 das 10 recebiam `409 Out of Stock`.
+**Medido (09/11, PostgreSQL real):** com 10 requisições simultâneas e a mesma chave, o resultado foi **1 pedido**, estoque reservado **uma vez** e **1 evento**. Sem a trava, com estoque baixo, 9 das 10 recebiam `409 Out of Stock`.
 
 **Custo de desempenho:** uma consulta pelo índice `UNIQUE` antes de reservar o estoque e uma conexão a mais do _pool_ durante a requisição, para segurar a trava. Isso só acontece em requisições **com** a chave. O efeito no p95 do `POST /orders` será medido no k6.
 

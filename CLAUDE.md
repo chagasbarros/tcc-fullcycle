@@ -167,7 +167,7 @@ npm run k6:after              # k6 depois da otimização
 
 ### Documentos obrigatórios
 
-- [ ] `README.md` — **a primeira linha deve ser:** `Nível escolhido: Projeto A (Avançado)`. Depois: como subir, como testar, link do CI verde
+- [x] `README.md` — **a primeira linha deve ser:** `Nível escolhido: Projeto A (Avançado)`. Depois: como subir, como testar, link do CI verde
 - [ ] `docs/desempenho.md`
 - [ ] `docs/ia.md` — prompts que importaram
 - [ ] `CONTRIBUTORS.md`

@@ -133,6 +133,43 @@ _(preencher ao fim do projeto)_ Candidatos já identificados:
 
 ## 6. Prints
 
-_(a incluir: Grafana com métricas RED, trace ponta a ponta no Jaeger, Swagger UI, CI verde)_
+Capturados em 13/11 com o stack local (`docker compose up -d`) depois de cerca de 4.700 requisições de tráfego misto (catálogo, pedidos pagos e recusados, consultas a pedidos inexistentes).
+
+### Grafana: métricas RED e SLO
+
+![Dashboard Marketplace — RED no Grafana](prints/grafana.png)
+
+- No topo: **p95 de `GET /catalog/products` = 4,76 ms** (meta do SLO: 200 ms), **0% de erros 5xx** e a taxa atual.
+- **Rate:** requisições por segundo por rota (pico de cerca de 39 req/s no catálogo).
+- **Errors:** respostas 4xx e 5xx por status. Os `404` são as consultas a pedidos inexistentes, de propósito.
+- **Duration:** p95 por rota e p50/p95/p99 de todas as rotas.
+
+### Jaeger: trace ponta a ponta de um pedido
+
+![Trace do POST /orders no Jaeger](prints/JaegerUI.png)
+
+- Um `POST /orders` com **33 spans em 2 serviços** (`marketplace-api` e `marketplace-worker`), em 20,62 ms no total.
+- Na API: os SQLs da reserva de estoque e da gravação do pedido, depois o `add order-placed.OrderPlaced` na fila.
+- No worker: `process order-placed`, a gravação do pagamento, `add payment-results.PaymentApproved` e `process payment-results`, que marca o pedido como pago.
+- O contexto do trace atravessa a fila duas vezes (ADR-0013).
+
+### Swagger UI
+
+![Swagger UI da Marketplace API](prints/SwaggerUI.png)
+
+- O contrato `docs/openapi.yaml` (OpenAPI 3.1) servido em `/docs`, o mesmo arquivo que o Spectral verifica no CI.
+
+### CI verde na `main`
+
+![Execuções do CI na main](prints/CI.png)
+
+- Todas as execuções na `main` verdes (ADR-0017: o CI roda em todo pull request e de novo depois de cada merge).
+
+### Deploy: staging e produção
+
+![Execuções do workflow de deploy](prints/deploy.png)
+
+- Cada merge com CI verde gera um deploy: staging automático, produção depois da aprovação do autor (ADR-0018).
+- A execução cinza (#9) foi descartada da fila pelo GitHub porque havia uma mais nova. Desde 13/11, um deploy antigo é pulado, nunca publicado por cima de uma versão mais nova (`docs/ia.md`, entrada 7).
 
 **Lição de operação (10/11):** o disco C: chegou a 0 GB livres, e o Docker Desktop travou e corrompeu os dados dele (erros de _read-only file system_). Limpar o cache do npm (~8 GB) resolveu. Vale verificar o espaço em disco antes da apresentação.

@@ -17,12 +17,17 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 ## 2. Roteiro da demo
 
-1. `docker compose up -d` → mostrar api, worker, postgres e redis saudáveis (`docker compose ps`).
+1. `docker compose up -d` → mostrar api, worker, postgres e redis saudáveis (`docker compose ps`). Use o comando sem `--wait`: com ele, o Compose acusa erro porque o `unleash-setup` termina depois de criar a flag. Num clone limpo, os 11 serviços ficaram estáveis em 39 s (13/11).
 2. `POST /catalog/products` → criar um produto de **R$ 100,00** e outro de **R$ 10,13**.
 3. `POST /orders` com `paymentMethod: CARD` no produto de R$ 100,00 → `PENDING_PAYMENT`; em seguida `GET /orders/{id}` → `PAID` (pagamento processado pelo worker via fila).
-4. `POST /orders` com cartão no produto de **R$ 10,13** → `PAYMENT_FAILED` (o provider fake recusa valores terminados em 13 centavos, ADR-0011) e **o estoque volta**.
+4. `POST /orders` com cartão no produto de **R$ 10,13** → `PAYMENT_FAILED` (o provider fake recusa valores terminados em 13 centavos, ADR-0011) e **o estoque volta**. Atenção: se o produto foi consultado antes, o `GET` pode mostrar o estoque antigo por até 60 s (cache do catálogo, ADR-0014). Para mostrar o estoque na hora, consulte o produto **só depois** do pedido, ou explique a tolerância declarada.
 5. Mesmo produto com `paymentMethod: PIX` → `PAID` (Strategy: o provider é escolhido em tempo de execução).
-6. `POST /orders/{id}/cancel` duas vezes → `200` e depois `409` (estado final, ADR-0007).
+6. **Cancelamento com o worker parado.** Com o worker no ar, o pagamento acontece em milissegundos e o cancelamento chega tarde (`409`). Por isso:
+   - `docker compose stop worker` → `POST /orders` → o pedido fica em `PENDING_PAYMENT` (a API continua aceitando pedidos sem o worker, ADR-0010);
+   - `POST /orders/{id}/cancel` duas vezes → `200` e depois `409` (estado final, ADR-0007);
+   - `docker compose start worker` → os pedidos que estavam na fila são processados.
+   - **Atenção:** ao religar o worker, o pedido cancelado **também é cobrado**. O `OrderPlaced` já estava na fila, e o estorno ficou fora do escopo (limitação registrada no ADR-0007). Use isso como gancho para "o que faria diferente", ou religue o worker só no fim da demo.
+   - Testado em 13/11 num clone limpo: `200` e `409`; ao religar, o pedido da fila virou `PAID` e o cancelado continuou `CANCELLED`, mas com o pagamento aprovado.
 7. Swagger UI em `http://localhost:3000/docs` (e o mesmo em produção: <https://marketplace-api-production.onrender.com/docs>).
 8. **Jaeger** (`http://localhost:16686`, serviço `marketplace-api`): abrir o trace do `POST /orders` do passo 3 e mostrar a API e o worker num único trace, com os SQLs da reserva de estoque.
 9. **Grafana** (`http://localhost:3001`, abre direto no dashboard "Marketplace — RED"): rate, erros (os `409` do passo 6 aparecem como 4xx) e p95 por rota com a linha de 200 ms do SLO.
@@ -122,6 +127,7 @@ _(preencher ao fim do projeto)_ Candidatos já identificados:
 - **k6 num ambiente dedicado e representativo de produção** (módulo 4): o antes e o depois foram medidos no notebook (ADR-0020), e o Render gratuito só permitiu um complemento leve (ADR-0022).
 - **Trava de idempotência por linha:** o pool separado (ADR-0019) eliminou o impasse, mas os pedidos com chave ainda fazem fila no pool de travas (p95 de 1,5 s com o cache desligado). Uma trava por `INSERT` não seguraria conexão nenhuma.
 - **Transactional Outbox:** hoje salvar o pedido e publicar `OrderPlaced` não são atômicos; se a publicação falhar, o pedido fica em `PENDING_PAYMENT` (ADR-0009).
+- **Cancelamento depois da cobrança:** um pedido cancelado enquanto o `OrderPlaced` espera na fila ainda é cobrado (ADR-0007). Faltam um evento `OrderCancelled`, para o `payments` não cobrar, e o estorno, para o caso em que a cobrança já aconteceu (visível no passo 6 da demo).
 - **Expiração de reservas:** se o worker nunca responder, o estoque fica reservado indefinidamente.
 - **Autenticação:** o `customerId` vem no corpo da requisição (ADR-0008).
 

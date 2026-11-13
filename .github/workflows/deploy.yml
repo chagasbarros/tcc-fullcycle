@@ -3,6 +3,8 @@ name: Deploy
 # Continuous delivery to Render (ADR-0018):
 #   green CI on main -> staging (automatic) -> production (waits for approval).
 # Rollback: run this workflow by hand with an earlier commit of main.
+# Automatic deploys only ship the LATEST commit of main: an older run (queued, re-run or
+# approved late) is skipped, so it can never replace a newer version (docs/ia.md, entry 7).
 on:
   workflow_run:
     workflows: [CI]
@@ -12,6 +14,7 @@ on:
     inputs:
       commit:
         description: Commit of main to deploy (empty = latest main). Use an older one to roll back.
+        type: string
         required: false
         default: ''
 
@@ -35,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
+      skip: ${{ steps.sha.outputs.skip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,17 +47,28 @@ jobs:
       - id: sha
         env:
           REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.workflow_run.head_sha }}
+          EVENT: ${{ github.event_name }}
         run: |
           sha="$(git rev-parse --verify "${REQUESTED:-origin/main}^{commit}")"
           # Only commits that are part of main (already went through CI) can be deployed.
           git merge-base --is-ancestor "$sha" origin/main ||
             { echo "::error::$sha is not on main"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          # Triggered by CI: only the newest commit of main is deployed. A newer merge has its
+          # own run, so shipping this one would only roll production back.
+          latest="$(git rev-parse origin/main)"
+          if [ "$EVENT" = workflow_run ] && [ "$sha" != "$latest" ]; then
+            echo "::notice::Skipped: $(git log -1 --format='%h' "$sha") is no longer the latest commit of main ($(git log -1 --format='%h' "$latest")); its own run deploys it."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "Deploying $(git log -1 --format='%h %s' "$sha")"
 
   staging:
     name: Staging
     needs: resolve
+    if: needs.resolve.outputs.skip == 'false'
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -65,11 +80,15 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           APP_URL: ${{ vars.APP_URL }}
           COMMIT_SHA: ${{ needs.resolve.outputs.sha }}
+          # Checked again right before deploying: main may have moved while this job waited
+          # in the queue or for approval, or the job may be a re-run.
+          REQUIRE_LATEST_MAIN: ${{ github.event_name == 'workflow_run' }}
         run: bash .github/scripts/render-deploy.sh
 
   production:
     name: Production
     needs: [resolve, staging]
+    if: needs.resolve.outputs.skip == 'false'
     runs-on: ubuntu-latest
     # The "production" GitHub Environment requires a reviewer: the job waits for approval.
     environment:
@@ -82,4 +101,7 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           APP_URL: ${{ vars.APP_URL }}
           COMMIT_SHA: ${{ needs.resolve.outputs.sha }}
+          # Checked again right before deploying: main may have moved while this job waited
+          # in the queue or for approval, or the job may be a re-run.
+          REQUIRE_LATEST_MAIN: ${{ github.event_name == 'workflow_run' }}
         run: bash .github/scripts/render-deploy.sh

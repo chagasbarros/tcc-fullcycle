@@ -196,7 +196,7 @@ O `CLAUDE.md` pede duas opções e a decisão do autor em toda escolha relevante
 - **O que a IA respondeu:** a mensagem não é erro. O GitHub mantém só um deploy na fila por grupo de concorrência e descartou o mais antigo.
 - **O que aconteceu depois:** os dois ambientes apareceram num commit **mais antigo** (`5e95bbe`, PR 21) que a `main` (`0591b92`, PR 22). A IA levantou a suspeita de um deploy automático do Render fora do GitHub Actions e pediu ao autor que conferisse o painel.
 - **Diagnóstico corrigido em 13/11:** a suspeita estava errada. A API do GitHub mostrou que a execução `43341801110` do workflow foi **reexecutada** (tentativa 2, às 22:27) e aprovada em produção. Uma reexecução publica o commit que disparou o CI original, mesmo que a `main` já esteja à frente.
-- **Correção proposta pela IA (PR seguinte):** o workflow só publicar um commit disparado pelo CI se ele ainda for o último da `main`. Rodar à mão para fazer rollback continua funcionando. O impacto foi nulo, porque os dois commits diferem só no `CONTRIBUTORS.md`.
+- **Correção (13/11, proposta pela IA e aprovada pelo autor):** o deploy disparado pelo CI só publica o commit se ele ainda for o último da `main`. A checagem acontece no início do workflow e de novo logo antes de cada ambiente, o que cobre a fila, a reexecução e a aprovação tardia. Rodar à mão para fazer rollback continua funcionando. O impacto foi nulo, porque os dois commits diferem só no `CONTRIBUTORS.md`.
 - **Por que importa:** é o mesmo padrão da entrada 1. A hipótese da IA só valeu depois de conferida com os dados, e desta vez a primeira hipótese estava errada.
 
 ## Lições

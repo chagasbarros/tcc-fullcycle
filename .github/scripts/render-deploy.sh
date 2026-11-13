@@ -4,13 +4,27 @@
 #   2. polls <APP_URL>/health until "version" is that commit: Render only switches traffic
 #      after the new instance passes its health check, so this means the deploy is done;
 #   3. smoke test: GET /catalog/products must answer 200.
-# Env: RENDER_DEPLOY_HOOK_URL, APP_URL, COMMIT_SHA, [TIMEOUT_SECONDS]
+# Env: RENDER_DEPLOY_HOOK_URL, APP_URL, COMMIT_SHA, [TIMEOUT_SECONDS], [REQUIRE_LATEST_MAIN]
 set -euo pipefail
 
 : "${RENDER_DEPLOY_HOOK_URL:?missing secret RENDER_DEPLOY_HOOK_URL in this GitHub Environment}"
 : "${APP_URL:?missing variable APP_URL in this GitHub Environment}"
 : "${COMMIT_SHA:?}"
 timeout="${TIMEOUT_SECONDS:-1200}" # free plan: build + boot can take several minutes
+
+# Automatic deploys (REQUIRE_LATEST_MAIN=true) never ship an older commit than the tip of
+# main: checked at the last moment, after any wait in the queue or for approval.
+if [ "${REQUIRE_LATEST_MAIN:-false}" = "true" ]; then
+  latest="$(git ls-remote origin refs/heads/main | cut -f1)"
+  if [ -z "${latest}" ]; then
+    echo "::error::Could not read the latest commit of main"
+    exit 1
+  fi
+  if [ "${latest}" != "${COMMIT_SHA}" ]; then
+    echo "::notice::Skipped: main moved to ${latest:0:7} while this job waited; not deploying the older ${COMMIT_SHA:0:7}."
+    exit 0
+  fi
+fi
 
 echo "Deploying ${COMMIT_SHA} to ${APP_URL}"
 # The hook URL already has ?key=...; never echo it.

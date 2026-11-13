@@ -62,10 +62,11 @@ Daqui em diante, cada merge na `main` dispara esse fluxo depois do CI.
 
 ## Operação
 
-| Situação                           | O que fazer                                                                                                                                      |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Rollback**                       | **Actions → Deploy → Run workflow** com o commit anterior da `main` (precisa de aprovação em produção). Ou use **Rollback** no painel do Render. |
-| **Desligar o cache** (kill switch) | Mude `CATALOG_CACHE_ENABLED` para `false` no _env group_ `marketplace-common`. O Render reinicia os serviços (cerca de 1 min).                   |
-| **Antes da apresentação**          | Abra `/health` de produção uns 2 minutos antes: o serviço gratuito dorme após 15 minutos sem tráfego.                                            |
-| **Fechar o banco para a internet** | Depois do passo 2, esvazie **marketplace-db → Networking → Access Control**. A API usa a URL interna.                                            |
-| **Validade**                       | O PostgreSQL gratuito expira 30 dias após a criação, com mais 14 dias para virar pago antes de ser apagado.                                      |
+| Situação                                                                  | O que fazer                                                                                                                                                  |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Rollback**                                                              | **Actions → Deploy → Run workflow** com o commit anterior da `main` (precisa de aprovação em produção). Ou use **Rollback** no painel do Render.             |
+| **Deploy pulado** (_Skipped: ... is no longer the latest commit of main_) | Não é erro: a `main` avançou e a execução mais nova publica a versão atual. **Não reexecute deploys antigos**; para voltar uma versão, use o rollback acima. |
+| **Desligar o cache** (kill switch)                                        | Mude `CATALOG_CACHE_ENABLED` para `false` no _env group_ `marketplace-common`. O Render reinicia os serviços (cerca de 1 min).                               |
+| **Antes da apresentação**                                                 | Abra `/health` de produção uns 2 minutos antes: o serviço gratuito dorme após 15 minutos sem tráfego.                                                        |
+| **Fechar o banco para a internet**                                        | Depois do passo 2, esvazie **marketplace-db → Networking → Access Control**. A API usa a URL interna.                                                        |
+| **Validade**                                                              | O PostgreSQL gratuito expira 30 dias após a criação, com mais 14 dias para virar pago antes de ser apagado.                                                  |

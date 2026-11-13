@@ -82,13 +82,13 @@ Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao l
 
 | Data  | O quê                                                                                | Resultado                                                                                                                    |
 | ----- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| 10/11 | Primeira execução do CI (4 jobs em paralelo)                                         | **Verde na 1ª execução**, ~3 min no total (o job mais lento é o de segurança, 2m43s)                                         |
-| 10/11 | Trivy na imagem de runtime                                                           | **10 CVEs HIGH**, todas no npm embutido na `node:22-alpine`; corrigido removendo o npm da imagem final → **0 HIGH/CRITICAL** |
-| 10/11 | gitleaks no histórico                                                                | **0 segredos** em 22 commits                                                                                                 |
-| 10/11 | Trace de **1 pedido** (`POST /orders` → `order-placed` → worker → `payment-results`) | **34 spans, 2 serviços, 1 único trace**; o mesmo `traceId` nos logs da API e do worker                                       |
-| 10/11 | p95 de `GET /catalog/products` no Prometheus (poucas requisições, sem carga)         | **4,9 ms**, contra a meta de 200 ms do SLO (`docs/slo.md`); número real virá do k6                                           |
+| 09/11 | Primeira execução do CI (4 jobs em paralelo)                                         | **Verde na 1ª execução**, ~3 min no total (o job mais lento é o de segurança, 2m43s)                                         |
+| 09/11 | Trivy na imagem de runtime                                                           | **10 CVEs HIGH**, todas no npm embutido na `node:22-alpine`; corrigido removendo o npm da imagem final → **0 HIGH/CRITICAL** |
+| 09/11 | gitleaks no histórico                                                                | **0 segredos** em 22 commits                                                                                                 |
+| 09/11 | Trace de **1 pedido** (`POST /orders` → `order-placed` → worker → `payment-results`) | **34 spans, 2 serviços, 1 único trace**; o mesmo `traceId` nos logs da API e do worker                                       |
+| 09/11 | p95 de `GET /catalog/products` no Prometheus (poucas requisições, sem carga)         | **4,9 ms**, contra a meta de 200 ms do SLO (`docs/slo.md`); número real virá do k6                                           |
 
-### Idempotência do pedido (10/11)
+### Idempotência do pedido (09/11)
 
 | Cenário (PostgreSQL real)                                  | Antes da trava                        | Depois da trava                                                                   |
 | ---------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
@@ -172,4 +172,4 @@ Capturados em 13/11 com o stack local (`docker compose up -d`) depois de cerca d
 - Cada merge com CI verde gera um deploy: staging automático, produção depois da aprovação do autor (ADR-0018).
 - A execução cinza (#9) foi descartada da fila pelo GitHub porque havia uma mais nova. Desde 13/11, um deploy antigo é pulado, nunca publicado por cima de uma versão mais nova (`docs/ia.md`, entrada 7).
 
-**Lição de operação (10/11):** o disco C: chegou a 0 GB livres, e o Docker Desktop travou e corrompeu os dados dele (erros de _read-only file system_). Limpar o cache do npm (~8 GB) resolveu. Vale verificar o espaço em disco antes da apresentação.
+**Lição de operação (09/11):** o disco C: chegou a 0 GB livres, e o Docker Desktop travou e corrompeu os dados dele (erros de _read-only file system_). Limpar o cache do npm (~8 GB) resolveu. Vale verificar o espaço em disco antes da apresentação.

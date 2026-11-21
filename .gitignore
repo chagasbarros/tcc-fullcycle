@@ -28,3 +28,6 @@ tests/contract/pacts/
 
 # Course material (Ebook de System Design): read locally, not published
 docs/Modulo4.md
+
+# Local video script (not versioned)
+docs/roteiro-video.md

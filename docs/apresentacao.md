@@ -1,6 +1,6 @@
 # Apresentação — material de apoio (16/11/2026)
 
-Roteiro de 10 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao longo do projeto com números medidos e prints. **Só entram aqui números que foram medidos de verdade**, com data e forma de reproduzir.
+Roteiro de no máximo 5 minutos (`CLAUDE.md`, seção 11). Este arquivo é atualizado ao longo do projeto com números medidos e prints. **Só entram aqui números que foram medidos de verdade**, com data e forma de reproduzir.
 
 | Bloco            | Tempo | Conteúdo                                                                                |
 | ---------------- | ----- | --------------------------------------------------------------------------------------- |

@@ -28,3 +28,7 @@ tests/contract/pacts/
 
 # Course material (Ebook de System Design): read locally, not published
 docs/Modulo4.md
+
+# Local docs of the author (not versioned)
+docs/roteiro-video.md
+docs/qualidade-e-seguranca.md

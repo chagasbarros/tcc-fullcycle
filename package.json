@@ -75,5 +75,8 @@
     "unleash-client": "6.12.2",
     "uuid": "^14.0.3",
     "zod": "^4.6.7"
+  },
+  "overrides": {
+    "effect": "^3.22.5"
   }
 }

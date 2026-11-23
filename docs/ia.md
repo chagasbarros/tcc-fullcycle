@@ -199,6 +199,14 @@ O `CLAUDE.md` pede duas opções e a decisão do autor em toda escolha relevante
 - **Correção (13/11, proposta pela IA e aprovada pelo autor):** o deploy disparado pelo CI só publica o commit se ele ainda for o último da `main`. A checagem acontece no início do workflow e de novo logo antes de cada ambiente, o que cobre a fila, a reexecução e a aprovação tardia. Rodar à mão para fazer rollback continua funcionando. O impacto foi nulo, porque os dois commits diferem só no `CONTRIBUTORS.md`.
 - **Por que importa:** é o mesmo padrão da entrada 1. A hipótese da IA só valeu depois de conferida com os dados, e desta vez a primeira hipótese estava errada.
 
+### 8. O CI vermelho que não era do PR
+
+- **Prompt do autor (23/11):** "o PR 29 deu erro, vamos cancelar esse PR"
+- **O que a IA encontrou:** o PR só mudava documentação. O job de segurança falhou no `npm audit --audit-level=high` por uma vulnerabilidade **HIGH** publicada depois da entrega (GHSA-7589-6fvf-x4pw, ReDoS na lib `effect`). A lib chega pelo `prisma@7.10.1`, cujo `@prisma/config` fixa exatamente `effect@3.20.0`; a correção existe a partir da `3.22.1`. Qualquer PR, e o próximo CI da `main`, falharia igual, e sem CI verde não há deploy.
+- **Opções sugeridas pela IA:** forçar a versão corrigida com `overrides` no `package.json` (recomendada: subida de versão menor dentro da mesma versão principal, validada pelos testes) ou esperar o Prisma publicar uma versão corrigida (sem data, com o CI vermelho até lá).
+- **Decisão do autor:** `overrides` com `effect: ^3.22.5`. O `npm audit --audit-level=high` voltou a passar; restam só alertas `moderate`, abaixo do limite do pipeline. Quando o Prisma atualizar a dependência, o `overrides` pode ser removido.
+- **Por que importa:** o pipeline barrou uma vulnerabilidade nova sem que nenhuma linha do projeto tivesse mudado. É o portão de SCA funcionando como foi desenhado.
+
 ## Lições
 
 - **A hipótese da IA só vale depois de medida.** O impasse do pool só virou diagnóstico depois do `pg_stat_activity`.
